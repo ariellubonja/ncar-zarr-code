@@ -11,7 +11,7 @@ def sequential_8_interpolation(array, cube_shape, low=4, high=60, size=50):
     :param size: number of points to pick and around which to interpolate
     """
 
-    for index in range(low, high):
+    for index in range(low, min(high, low+size)):
         _ = array[index-4:index+4, index-4:index+4, index-4:index+4]
 
 
