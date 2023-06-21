@@ -3,7 +3,7 @@ import numpy as np
 
 def sequential_8_interpolation(array, cube_shape, low=4, high=60, size=50):
     """
-    Sequential access and Lagrangian 8-interpolation of array. Points picked sequentially between [low, high]
+    Sequential access and Lagrangian 8-interpolation of array. Points picked sequentially between [low, high], forming an 8x8x8 cube
     :param array: array to be interpolated
     :param cube_shape: cube dimensions from within to pick points
     :param low: lower bound of cube e.g. 0 will be 0,0,0, meaning first chunk of array. Needs to be >= 4 for 8-interpolation
@@ -18,7 +18,7 @@ def sequential_8_interpolation(array, cube_shape, low=4, high=60, size=50):
 def uniform_random_8_interpolation(array, cube_shape, low=4, high=60, size=50):
     """
     Random Lagrangian 8-interpolation of array. Points picked uniformly at random between [low, high]
-    :param array: array to be interpolated
+    :param array: array to be interpolated, forming an 8x8x8 cube
     :param cube_shape: cube dimensions from within to pick points
     :param low: lower bound of cube e.g. 0 will be 0,0,0, meaning first chunk of array
     :param high: upper bound of cube e.g. 60 will be 60,60,60, meaning bottom-right chunk of array
