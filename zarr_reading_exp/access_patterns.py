@@ -15,19 +15,31 @@ def sequential_8_interpolation(array, cube_shape, low=4, high=60, size=50):
         _ = array[index-4:index+4, index-4:index+4, index-4:index+4]
 
 
-def uniform_random_8_interpolation(array, cube_shape, low=4, high=60, size=50):
+
+def create_random_indices(cube_shape, low=4, high=60, size=50):
     """
-    Random Lagrangian 8-interpolation of array. Points picked uniformly at random between [low, high]
-    :param array: array to be interpolated, forming an 8x8x8 cube
+    Generate 3D random indices
+    
     :param cube_shape: cube dimensions from within to pick points
     :param low: lower bound of cube e.g. 0 will be 0,0,0, meaning first chunk of array
     :param high: upper bound of cube e.g. 60 will be 60,60,60, meaning bottom-right chunk of array
     :param size: number of points to pick and around which to interpolate
     """
-
+    
     rand_indices = np.array([np.random.randint(low=low, high=high, size=cube_shape[0]),
-                                  np.random.randint(low=low, high=high, size=cube_shape[1]),
-                                np.random.randint(low=low, high=high, size=cube_shape[2])]).T
+                              np.random.randint(low=low, high=high, size=cube_shape[1]),
+                            np.random.randint(low=low, high=high, size=cube_shape[2])]).T
+        
+
+def index_8_interpolation(array, rand_indices):
+    """
+    Random Lagrangian 8-interpolation of array. Points picked uniformly at random between [low, high]
+    :param array: array to be interpolated, forming an 8x8x8 cube
+    :param rand_indices: list or array of indices to interpolate around in the given array
+    """
+
+    # Can't generate random indices this here bcs. it penalizes Single-variable experiments (ran 3 times vs. once for joint)
+
     for index in range(len(rand_indices)):
         x = rand_indices[index][0]
         y = rand_indices[index][1]
