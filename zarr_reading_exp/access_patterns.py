@@ -47,3 +47,21 @@ def index_8_interpolation(array, rand_indices):
         y = rand_indices[index][1]
         z = rand_indices[index][2]
         _ = array[x-4:x+4, y-4:y+4, z-4:z+4]
+
+
+
+def access_1_velocity_from_joint(xarray_arr, rand_indices):
+    """
+    :param xarray_arr: array to access from. Efficiently slice zarr using store = xarray.open_zarr(path), then use slice_3d = store.isel({'velocity component (xyz)': 0})
+    :param rand_indices: list or array of indices to interpolate around in the given array
+    """
+    for row in rand_indices:
+        # Define the slice
+        slice_nnx = slice(row[0]-4, row[0]+4)
+        slice_nny = slice(row[1]-4, row[1]+4)
+        slice_nnz = slice(row[2]-4, row[2]+4)
+
+        # Access a 3D subset of the array
+        subset_3d = xarray_arr.isel(nnx=slice_nnx, nny=slice_nny, nnz=slice_nnz)
+
+        _ = subset_3d.to_array().squeeze()
