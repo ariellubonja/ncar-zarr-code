@@ -29,6 +29,8 @@ def create_random_indices(cube_shape, low=4, high=60, size=50):
     rand_indices = np.array([np.random.randint(low=low, high=high, size=cube_shape[0]),
                               np.random.randint(low=low, high=high, size=cube_shape[1]),
                             np.random.randint(low=low, high=high, size=cube_shape[2])]).T
+    
+    return rand_indices
         
 
 def index_8_interpolation(array, rand_indices):
