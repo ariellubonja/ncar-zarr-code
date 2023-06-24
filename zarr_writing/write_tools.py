@@ -1,5 +1,8 @@
 import numpy as np
 import xarray as xr
+import dask.array as da
+from dask.distributed import Client
+
 
 # ChatGPT
 def split_zarr_group(ds, smaller_size, dims):
@@ -62,7 +65,13 @@ def merge_velocities(data_xr):
         
         :param data_xr: the dataset (Xarray group) with 3 velocity components to merge
     """
+    client = Client()
+
+    
     b = da.stack([data_xr['u'], data_xr['v'], data_xr['w']], axis=3)
 
+    result = b.rechunk((chunk_size_base,chunk_size_base,chunk_size_base,3))
+    
+    client.close()
 
-    return b.rechunk((chunk_size_base,chunk_size_base,chunk_size_base,3))
+    return result
