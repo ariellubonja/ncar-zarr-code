@@ -62,7 +62,7 @@ def merge_velocities(data_xr):
         
         :param data_xr: the dataset (Xarray group) with 3 velocity components to merge
     """
-    b = da.stack([data_xr['u'], data_xr['v'], data_xr['w'], axis=3)
+    b = da.stack([data_xr['u'], data_xr['v'], data_xr['w']], axis=3)
 
 
     return b.rechunk((chunk_size_base,chunk_size_base,chunk_size_base,3))
