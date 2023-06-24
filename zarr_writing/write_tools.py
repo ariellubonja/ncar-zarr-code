@@ -48,3 +48,21 @@ def split_zarr_group(ds, smaller_size, dims):
                         chunks.append(chunk)
 
     return chunks
+
+
+
+def list_fileDB_folders():
+    return [f'/home/idies/workspace/turb/data{str(d).zfill(2)}_{str(f).zfill(2)}/zarr/'  for f in range(1,4) for d in range(1,13)]
+
+
+
+def merge_velocities(data_xr):
+    """
+        Merge the 3 velocity components/directions - such merging exhibits faster 3-component reads. This is a Dask lazy computation
+        
+        :param data_xr: the dataset (Xarray group) with 3 velocity components to merge
+    """
+    b = da.stack([data_xr['u'], data_xr['v'], data_xr['w'], axis=3)
+
+
+    return b.rechunk((chunk_size_base,chunk_size_base,chunk_size_base,3))
