@@ -2,8 +2,17 @@ import numpy as np
 import xarray as xr
 import dask.array as da
 from dask.distributed import Client
-import morton
 import math
+
+import subprocess
+import sys
+
+try:
+    import morton
+except ImportError:
+    subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'morton-py'])
+finally:
+    import morton
 
 
 # ChatGPT
