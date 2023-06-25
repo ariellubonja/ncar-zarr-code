@@ -2,6 +2,8 @@ import numpy as np
 import xarray as xr
 import dask.array as da
 from dask.distributed import Client
+import morton
+import math
 
 
 # ChatGPT
@@ -16,41 +18,34 @@ def split_zarr_group(ds, smaller_size, dims):
         dims (tuple): Names of the dimensions in order (dim_0, dim_1, dim_2). This can be gotten in reverse order using [dim for dim in data_xr.dims]
         
     Returns:
-        list[xarray.Dataset]: A list of smaller Datasets.
+        list[xarray.Dataset]: A list of lists of lists of smaller Datasets.
     """
 
     # Calculate the number of chunks along each dimension
     num_chunks = [ds.dims[dim] // smaller_size for dim in dims]
 
-    chunks = []
+    # I want this to be a 3D list of lists
+    outer_dim = []
 
-    if len(dims) == 3:
-        for i in range(num_chunks[0]):
-            for j in range(num_chunks[1]):
-                for k in range(num_chunks[2]):
-                    # Select the chunk from each DataArray
-                    chunk = ds.isel(
-                        {dims[0]: slice(i * smaller_size, (i + 1) * smaller_size),
-                         dims[1]: slice(j * smaller_size, (j + 1) * smaller_size),
-                         dims[2]: slice(k * smaller_size, (k + 1) * smaller_size)}
-                    )
-                    chunks.append(chunk)
-    # Grouped Velocity is 4D
-    elif len(dims) == 4:
-        for i in range(num_chunks[0]):
-            for j in range(num_chunks[1]):
-                for k in range(num_chunks[2]):
-                    for l in range(num_chunks[3]):
-                        # Select the chunk from each DataArray
-                        chunk = ds.isel(
-                            {dims[0]: slice(i * smaller_size, (i + 1) * smaller_size),
-                             dims[1]: slice(j * smaller_size, (j + 1) * smaller_size),
-                             dims[2]: slice(k * smaller_size, (k + 1) * smaller_size),
-                             dims[3]: slice(l * smaller_size, (l + 1) * smaller_size)}
-                        )
-                        chunks.append(chunk)
+    for i in range(num_chunks[0]):
+        mid_dim = []
+        for j in range(num_chunks[1]):
+            inner_dim = []
 
-    return chunks
+            for k in range(num_chunks[2]):
+                # Select the chunk from each DataArray
+                chunk = ds.isel( # TODO make this into a function: slice_group()
+                    {dims[0]: slice(i * smaller_size, (i + 1) * smaller_size),
+                     dims[1]: slice(j * smaller_size, (j + 1) * smaller_size),
+                     dims[2]: slice(k * smaller_size, (k + 1) * smaller_size)}
+                )
+                inner_dim.append(chunk)
+
+            mid_dim.append(inner_dim)
+
+        outer_dim.append(mid_dim)
+
+    return outer_dim
 
 
 
@@ -59,19 +54,39 @@ def list_fileDB_folders():
 
 
 
-def merge_velocities(data_xr):
+def merge_velocities(data_xr, chunk_size_base=64, use_dask=True):
     """
         Merge the 3 velocity components/directions - such merging exhibits faster 3-component reads. This is a Dask lazy computation
         
         :param data_xr: the dataset (Xarray group) with 3 velocity components to merge
+        :param use_dask: Whether to run single-threaded or use Dask. I'm having problems with Dask:Nanny on SciServer Compute - https://github.com/dask/distributed/issues/3955
     """
-    client = Client()
-
     
+    if use_dask:
+        client = Client()
+
+    # Merge Velocities into 1
     b = da.stack([data_xr['u'], data_xr['v'], data_xr['w']], axis=3)
-
-    result = b.rechunk((chunk_size_base,chunk_size_base,chunk_size_base,3))
+    # Make into correct chunk sizes
+    b = b.rechunk((chunk_size_base,chunk_size_base,chunk_size_base,3))
     
-    client.close()
+    
+    
+
+    # Drop individual velocities
+    result = data_xr.drop_vars(['u', 'v', 'w'])
+    # Add joined velocity to original group
+    result['velocity'] = xr.DataArray(b, dims=('nnz', 'nny', 'nnx', 'velocity component (xyz)'))
+    
+    if use_dask:
+        client.close()
 
     return result
+
+
+
+def morton_pack(array_cube_side, x,y,z):
+    bits = int(math.log(array_cube_side, 2))
+    mortoncurve = morton.Morton(dimensions = 3, bits = bits)
+
+    return mortoncurve.pack(x, y, z)
