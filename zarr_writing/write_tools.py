@@ -90,3 +90,27 @@ def morton_pack(array_cube_side, x,y,z):
     mortoncurve = morton.Morton(dimensions = 3, bits = bits)
 
     return mortoncurve.pack(x, y, z)
+
+
+def morton_order_cubes(cubes):
+    """
+    For a 3D list (list of lists of lists), return the z-order of those lists
+    
+    :param cubes: Should be the Xarray group, split into 512 smaller arrays, represented as a 3D list
+    """
+    
+    cube_root = len(cubes) # Smaller groups is nxnxn
+
+    z_order = []
+    # Z-order the cube of points so they "linearize" far from each other
+    for i in range(len(cubes)):
+        a = []
+        for j in range(len(cubes[i])):
+            b = []
+            for k in range(len(cubes[i][j])):
+                z_position = morton_pack(cube_root, i,j,k)
+                b.append(z_position)
+            a.append(b)
+        z_order.append(a)
+
+    return z_order
