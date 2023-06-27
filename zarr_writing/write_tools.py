@@ -77,7 +77,7 @@ def merge_velocities(data_xr, chunk_size_base=64, use_dask=True):
     # Merge Velocities into 1
     b = da.stack([data_xr['u'], data_xr['v'], data_xr['w']], axis=3)
     # Make into correct chunk sizes
-    b = b.rechunk((chunk_size_base,chunk_size_base,chunk_size_base,3))
+#     b = b.rechunk((chunk_size_base,chunk_size_base,chunk_size_base,3))
     
     
     
