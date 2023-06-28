@@ -1,5 +1,6 @@
-import numpy as np
+chunk_sizeimport numpy as np
 import xarray as xr
+import dask
 import dask.array as da
 from dask.distributed import Client
 import math
@@ -123,3 +124,15 @@ def morton_order_cubes(cubes):
         z_order.append(a)
 
     return z_order
+
+
+
+@dask.delayed
+def write_to_disk_dask(dest_groupname, current_array, encoding):
+    return write_to_disk(dest_groupname, current_array, encoding)
+
+
+def write_to_disk(dest_groupname, current_array, encoding):
+    current_array.to_zarr(store=dest_groupname,
+        mode="w",
+        encoding = encoding)
