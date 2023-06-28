@@ -1,4 +1,4 @@
-chunk_sizeimport numpy as np
+import numpy as np
 import xarray as xr
 import dask
 import dask.array as da
