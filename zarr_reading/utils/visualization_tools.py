@@ -3,7 +3,7 @@ import matplotlib.animation as animation
 import numpy as np
 
 
-def animate_cube(data, dimension='z', save_filename='3d_data_animation.gif'):
+def animate_cube(data, dimension='z', save_filename='visualizations/3d_data_animation.gif'):
     """
     Animate a 3D data cube along a given dimension.
     :param data: 3D data cube
