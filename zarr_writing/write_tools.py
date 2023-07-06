@@ -4,6 +4,7 @@ import dask
 import dask.array as da
 from dask.distributed import Client
 import math
+from itertools import product
 
 import subprocess
 import sys
@@ -14,6 +15,48 @@ except ImportError:
     subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'morton-py'])
 finally:
     import morton
+
+
+def node_assignment(cube_side: int):
+    """
+    Ryan's node assignment code that solves the Color-matching problem
+
+    :param cube_side: Length of the cube side to be assigned to nodes
+    """
+    def get_bounds(idx:int, mx:int):
+        """Helper for requesting valid indicies around an index"""
+        return max(idx-1, 0), min(idx+2, mx)
+
+    # There are 34 availble nodes that are 1-indexed
+    colors = np.arange(34) + 1
+    # An array for holding how often a node has been assigned too.
+    color_counts = np.zeros_like(colors)
+    # An array to store the node assignment the 8192^3 data is broken into 512^3
+    # sub-cubes so we need to 8192/512=16 assignments along each dimension
+
+
+    nodes = np.zeros([cube_side, cube_side, cube_side], dtype=int)
+
+    # iterate through the position indicies in `nodes` and assign available 
+    # nodes greedily such that there is not a matching node within the 
+    # (8 + 9 + 9) 26 cube neighborhood.
+    for i, j, k in product(np.arange(cube_side), np.arange(cube_side), np.arange(cube_side)):
+        if nodes[i, j, k] == 0:
+            neighbor_colors = nodes[
+                slice(*get_bounds(i, cube_side)),
+                slice(*get_bounds(j, cube_side)),
+                slice(*get_bounds(k, cube_side))
+            ]
+            avail_colors = np.setdiff1d(colors, neighbor_colors.flatten())
+            color_idxs = avail_colors-1
+            greedy_color_idx = np.argmin(color_counts[color_idxs])
+            greedy_color = colors[color_idxs[greedy_color_idx]]
+            color_counts[color_idxs[greedy_color_idx]] += 1
+            
+            nodes[i, j, k] = greedy_color
+    
+    return nodes
+
 
 
 # ChatGPT
