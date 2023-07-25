@@ -4,7 +4,7 @@ import numpy as np
 import zarr
 import dask
 import os
-import write_tools
+from utils import write_tools
 
 class TestZarrSplit(unittest.TestCase):
 
