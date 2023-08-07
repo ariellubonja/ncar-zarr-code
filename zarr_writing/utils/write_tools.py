@@ -79,6 +79,8 @@ def split_zarr_group(ds, smaller_size, dims):
 
     # I want this to be a 3D list of lists
     outer_dim = []
+    
+    range_list = [] # Where chunks start and end. Needed for Mike's code to find correct chunks to access
 
     for i in range(num_chunks[0]):
         mid_dim = []
@@ -87,18 +89,26 @@ def split_zarr_group(ds, smaller_size, dims):
 
             for k in range(num_chunks[2]):
                 # Select the chunk from each DataArray
-                chunk = ds.isel( # TODO make this into a function: slice_group()
-                    {dims[0]: slice(i * smaller_size, (i + 1) * smaller_size),
-                     dims[1]: slice(j * smaller_size, (j + 1) * smaller_size),
-                     dims[2]: slice(k * smaller_size, (k + 1) * smaller_size)}
+                # These are first distributed along the last (i.e. the x)-index
+                chunk = ds.isel(
+                    {dims[0]: slice(i * smaller_size, (i + 1) * smaller_size), # nnz
+                     dims[1]: slice(j * smaller_size, (j + 1) * smaller_size), # nny
+                     dims[2]: slice(k * smaller_size, (k + 1) * smaller_size)} # nnx
                 )
                 inner_dim.append(chunk)
+                
+                a = []
+                a.append([i * smaller_size, (i + 1) * smaller_size])
+                a.append([j * smaller_size, (j + 1) * smaller_size])
+                a.append([k * smaller_size, (k + 1) * smaller_size])
+                
+                range_list.append(a)
 
             mid_dim.append(inner_dim)
 
         outer_dim.append(mid_dim)
 
-    return outer_dim
+    return outer_dim, range_list
 
 
 
@@ -107,7 +117,7 @@ def list_fileDB_folders():
 
 
 
-def merge_velocities(data_xr, chunk_size_base=64, use_dask=True):
+def merge_velocities(data_xr, chunk_size_base=64, use_dask=True, n_dask_workers=2):
     """
         Merge the 3 velocity components/directions - such merging exhibits faster 3-component reads. This is a Dask lazy computation
         
@@ -116,7 +126,7 @@ def merge_velocities(data_xr, chunk_size_base=64, use_dask=True):
     """
     
     if use_dask:
-        client = Client()
+        client = Client(n_workers=n_dask_workers)
 
     # Merge Velocities into 1
     b = da.stack([data_xr['u'], data_xr['v'], data_xr['w']], axis=3)
