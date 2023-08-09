@@ -126,7 +126,7 @@ def merge_velocities(data_xr, chunk_size_base=64, use_dask=True, n_dask_workers=
     """
     
     if use_dask:
-        client = Client(n_workers=n_dask_workers)
+        client = Client(n_workers=n_dask_workers, local_directory='/home/idies/workspace/Temporary/ariel4/scratch/dask-temp')
 
     # Merge Velocities into 1
     b = da.stack([data_xr['u'], data_xr['v'], data_xr['w']], axis=3)
@@ -187,3 +187,5 @@ def write_to_disk(dest_groupname, current_array, encoding):
     current_array.to_zarr(store=dest_groupname,
         mode="w",
         encoding = encoding)
+    
+    print('Done writing', dest_groupname)
