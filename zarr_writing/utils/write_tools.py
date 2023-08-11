@@ -117,7 +117,7 @@ def list_fileDB_folders():
 
 
 
-def merge_velocities(data_xr, chunk_size_base=64, use_dask=True, n_dask_workers=2):
+def merge_velocities(data_xr, dask_local_dir, chunk_size_base=64, use_dask=True, n_dask_workers=2):
     """
         Merge the 3 velocity components/directions - such merging exhibits faster 3-component reads. This is a Dask lazy computation
         
@@ -126,7 +126,7 @@ def merge_velocities(data_xr, chunk_size_base=64, use_dask=True, n_dask_workers=
     """
     
     if use_dask:
-        client = Client(n_workers=n_dask_workers, local_directory='/home/idies/workspace/Temporary/ariel4/scratch/dask-temp')
+        client = Client(n_workers=n_dask_workers, local_directory=dask_local_dir)
 
     # Merge Velocities into 1
     b = da.stack([data_xr['u'], data_xr['v'], data_xr['w']], axis=3)
