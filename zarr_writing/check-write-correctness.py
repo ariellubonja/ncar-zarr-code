@@ -22,6 +22,8 @@ dask_local_dir = '/home/idies/workspace/turb/data02_02'
 
 
 def prepare_data(xr_path):
+    print("Started preparing NetCDF data for verification. This will take ~20min")
+    
     # for timestep_nr in timestep_range:
     data_xr = xr.open_dataset(xr_path)
 
