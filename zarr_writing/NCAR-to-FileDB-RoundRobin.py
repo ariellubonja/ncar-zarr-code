@@ -1,6 +1,3 @@
-import unittest
-import xarray as xr
-import numpy as np
 import os
 from utils import write_tools
 import queue, threading, argparse, sys
@@ -46,4 +43,47 @@ if __name__ == '__main__':
 
 
     cubes, range_list = write_tools.prepare_data(raw_ncar_folder_path + "/jhd." + str(timestep_nr).zfill(3) + ".nc")
+    chunk_morton_mapping = write_tools.get_chunk_morton_mapping(range_list, desired_cube_side, dest_folder_name)
 
+    cubes = write_tools.flatten_3d_list(cubes)
+    flattened_node_assgn = write_tools.flatten_3d_list(write_tools.node_assignment(4))
+
+    q = queue.Queue()
+
+
+    # Populate the queue with Write to FileDB tasks
+    for i in range(len(range_list)):
+    #     for j in range(4):
+    #         for k in range(4):
+        min_coord = [a[0] for a in range_list[i]]
+        max_coord = [a[1] - 1 for a in range_list[i]]
+        
+        morton = (write_tools.morton_pack(array_cube_side, min_coord[2], min_coord[1], min_coord[0]), write_tools.morton_pack(array_cube_side, max_coord[2], max_coord[1], max_coord[0]))
+        
+        chunk_name = write_tools.search_dict_by_value(chunk_morton_mapping, morton)
+        
+        idx = int(chunk_name[-2:].lstrip('0'))
+        
+        filedb_index = flattened_node_assgn[idx - 1] - 1
+        
+        destination = os.path.join(folders[filedb_index], dest_folder_name + str(idx).zfill(2) + "_" + str(timestep_nr).zfill(3) + ".zarr")
+        
+        current_array = cubes[i]
+                
+        q.put((current_array, destination, encoding))
+    
+
+    # Create threads and start them
+
+    threads = []
+    for _ in range(num_threads):
+        t = threading.Thread(target=write_tools.write_to_disk, args=(q,))
+        t.start()
+        threads.append(t)
+
+    # Wait for all tasks to be processed
+    q.join()
+
+    # Wait for all threads to finish
+    for t in threads:
+        t.join()
