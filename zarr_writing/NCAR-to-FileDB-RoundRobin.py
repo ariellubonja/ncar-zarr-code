@@ -43,7 +43,7 @@ if __name__ == '__main__':
 
 
     cubes, range_list = write_tools.prepare_data(raw_ncar_folder_path + "/jhd." + str(timestep_nr).zfill(3) + ".nc")
-    chunk_morton_mapping = write_tools.get_chunk_morton_mapping(range_list, desired_cube_side)
+    chunk_morton_mapping = write_tools.get_chunk_morton_mapping(range_list, dest_folder_name)
 
     cubes = write_tools.flatten_3d_list(cubes)
     flattened_node_assgn = write_tools.flatten_3d_list(write_tools.node_assignment(4))
