@@ -21,35 +21,6 @@ num_threads = 1  # For reading from FileDB
 dask_local_dir = '/home/idies/workspace/turb/data02_02'
 
 
-def prepare_data(xr_path):
-    print("Started preparing NetCDF data for verification. This will take ~20min")
-    
-    # for timestep_nr in timestep_range:
-    data_xr = xr.open_dataset(xr_path)
-
-    # Group 3 velocity components together
-    # This fails with Dask bcs. of write permission error on SciServer Job
-    # Never use dask with remote location on this!!
-    merged_velocity = write_tools.merge_velocities(data_xr, dask_local_dir=dask_local_dir
-                                                , chunk_size_base=chunk_size, use_dask=True, n_dask_workers=n_dask_workers)
-
-
-    # Unabbreviate 'e', 'p', 't' variable names
-    merged_velocity = merged_velocity.rename({'e': 'energy', 't': 'temperature', 'p': 'pressure'})
-
-
-    dims = [dim for dim in data_xr.dims]
-    dims.reverse() # use (nnz, nny, nnx) instead of (nnx, nny, nnz)
-
-    # Split 2048^3 into smaller 512^3 arrays
-    smaller_groups, range_list = write_tools.split_zarr_group(merged_velocity, desired_cube_side, dims)
-
-
-    print('Done preparing data. Starting to verify...')
-
-    return smaller_groups, range_list
-
-
 def verify_512_cube(original_512, zarr_512_path):
     print(f"Reading Zarr from {zarr_512_path}...")
     zarr_512 = xr.open_zarr(zarr_512_path)
@@ -79,44 +50,27 @@ class VerifyWriteTest(unittest.TestCase):
             folders[i] += dest_folder_name + "_" + str(i + 1).zfill(2) + "_" + write_type + "/"
 
 
-        cubes, range_list = prepare_data(raw_ncar_folder_path + "/jhd." + str(timestep_nr).zfill(3) + ".nc")
-        
-        sorted_morton_list = [] # Sorting by Morton code to be consistent with Isotropic8192
+        cubes, range_list = write_tools.prepare_data(raw_ncar_folder_path + "/jhd." + str(timestep_nr).zfill(3) + ".nc")
+        cubes = flatten_3d_list(cubes)
 
-        for i in range((array_cube_side / desired_cube_side) ** 3):            
-            min_coord = [a[0] for a in range_list[i]]
-            max_coord = [a[1] - 1 for a in range_list[i]]
-                    
-            sorted_morton_list.append((write_tools.morton_pack(array_cube_side, min_coord[0], min_coord[1], min_coord[2]), write_tools.morton_pack(array_cube_side, max_coord[0], max_coord[1], max_coord[2])))
-                
-        sorted_morton_list = sorted(sorted_morton_list)
+        chunk_morton_mapping = write_tools.get_chunk_morton_mapping(range_list, desired_cube_side)
+
+        q = queue.Queue()
+
         # Given up in favor of Ryan's node coloring technique
         #     z_order = write_tools.morton_order_cube(cube_side=4)
         node_assignments = write_tools.node_assignment(cube_side=4)
         flattened_node_assgn = flatten_3d_list(node_assignments)
 
-        mike_dict = {}
-        for i in range(len(range_list)):            
-            min_coord = [a[0] for a in range_list[i]]
-            max_coord = [a[1] - 1 for a in range_list[i]]
-                    
-            mike_dict[dest_folder_name + str(i + 1).zfill(2)] = sorted_morton_list[i]
-        
-        cubes = flatten_3d_list(cubes)
-
-        q = queue.Queue()
-
 
         # Populate the queue with tasks
         for i in range(len(range_list)):
-        #     for j in range(4):
-        #         for k in range(4):
             min_coord = [a[0] for a in range_list[i]]
             max_coord = [a[1] - 1 for a in range_list[i]]
             
             morton = (write_tools.morton_pack(array_cube_side, min_coord[2], min_coord[1], min_coord[0]), write_tools.morton_pack(array_cube_side, max_coord[2], max_coord[1], max_coord[0]))
             
-            chunk_name = search_dict_by_value(mike_dict, morton)
+            chunk_name = search_dict_by_value(chunk_morton_mapping, morton)
             
             idx = int(chunk_name[-2:].lstrip('0'))
             

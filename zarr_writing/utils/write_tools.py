@@ -1,9 +1,9 @@
 import numpy as np
 import xarray as xr
-import dask
+# import dask
 import dask.array as da
 from dask.distributed import Client
-import math
+import math, queue
 from itertools import product
 
 import subprocess
@@ -15,6 +15,35 @@ except ImportError:
     subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'morton-py'])
 finally:
     import morton
+
+
+def prepare_data(xr_path, desired_cube_side=512, chunk_size=64, dask_local_dir='/home/idies/workspace/turb/data02_02', n_dask_workers=4):
+    print("Started preparing NetCDF data for verification. This will take ~20min")
+    
+    # for timestep_nr in timestep_range:
+    data_xr = xr.open_dataset(xr_path)
+
+    # Group 3 velocity components together
+    # This fails with Dask bcs. of write permission error on SciServer Job
+    # Never use dask with remote location on this!!
+    merged_velocity = merge_velocities(data_xr, dask_local_dir=dask_local_dir
+                                                , chunk_size_base=chunk_size, use_dask=True, n_dask_workers=n_dask_workers)
+
+
+    # Unabbreviate 'e', 'p', 't' variable names
+    merged_velocity = merged_velocity.rename({'e': 'energy', 't': 'temperature', 'p': 'pressure'})
+
+
+    dims = [dim for dim in data_xr.dims]
+    dims.reverse() # use (nnz, nny, nnx) instead of (nnx, nny, nnz)
+
+    # Split 2048^3 into smaller 512^3 arrays
+    smaller_groups, range_list = split_zarr_group(merged_velocity, desired_cube_side, dims)
+
+
+    print('Done preparing data. Starting to verify...')
+
+    return smaller_groups, range_list
 
 
 def node_assignment(cube_side: int):
@@ -56,7 +85,6 @@ def node_assignment(cube_side: int):
             nodes[i, j, k] = greedy_color
     
     return nodes
-
 
 
 # ChatGPT
@@ -111,10 +139,8 @@ def split_zarr_group(ds, smaller_size, dims):
     return outer_dim, range_list
 
 
-
 def list_fileDB_folders():
     return [f'/home/idies/workspace/turb/data{str(d).zfill(2)}_{str(f).zfill(2)}/zarr/'  for f in range(1,4) for d in range(1,13)]
-
 
 
 def merge_velocities(data_xr, dask_local_dir, chunk_size_base=64, use_dask=True, n_dask_workers=2):
@@ -147,7 +173,6 @@ def merge_velocities(data_xr, dask_local_dir, chunk_size_base=64, use_dask=True,
     return result
 
 
-
 def morton_pack(array_cube_side, x,y,z):
     bits = int(math.log(array_cube_side, 2))
     mortoncurve = morton.Morton(dimensions = 3, bits = bits)
@@ -157,6 +182,7 @@ def morton_pack(array_cube_side, x,y,z):
 
 def morton_order_cube(cube_side: int):
     """
+    DEPRECATED in favor of Ryan's `node_assignment()`
     For a 3D list (list of lists of lists), return the z-order of those lists
     
     :param cube_side: Length of the cube side to be z-ordered
@@ -177,15 +203,62 @@ def morton_order_cube(cube_side: int):
     return z_order
 
 
+def get_sorted_morton_list(range_list, array_cube_side=2048):
+    sorted_morton_list = [] # Sorting by Morton code to be consistent with Isotropic8192
 
-@dask.delayed
-def write_to_disk_dask(dest_groupname, current_array, encoding):
-    return write_to_disk(dest_groupname, current_array, encoding)
+    for i in range(len(range_list)):
+        min_coord = [a[0] for a in range_list[i]]
+        max_coord = [a[1] - 1 for a in range_list[i]]
+                
+        sorted_morton_list.append((morton_pack(array_cube_side, min_coord[0], min_coord[1], min_coord[2]), morton_pack(array_cube_side, max_coord[0], max_coord[1], max_coord[2])))
+            
+    sorted_morton_list = sorted(sorted_morton_list)
+
+    return sorted_morton_list
 
 
-def write_to_disk(dest_groupname, current_array, encoding):
-    current_array.to_zarr(store=dest_groupname,
-        mode="w",
-        encoding = encoding)
+def get_chunk_morton_mapping(range_list, dest_folder_name):
+    """
+    Get names of chunks e.g. sabl2048b01, sabl2048b02, etc. and their corresponding first and last point Morton codes
+    """
+    sorted_morton_list = get_sorted_morton_list(range_list)
+
+    chunk_morton_mapping = {}
+    for i in range(len(range_list)):            
+        min_coord = [a[0] for a in range_list[i]]
+        max_coord = [a[1] - 1 for a in range_list[i]]
+                
+        chunk_morton_mapping[dest_folder_name + str(i + 1).zfill(2)] = sorted_morton_list[i]
     
-    print('Done writing', dest_groupname)
+    return chunk_morton_mapping
+
+
+# This always fails with Kernel Died error on SciServer Jobs
+# @dask.delayed
+# def write_to_disk_dask(dest_groupname, current_array, encoding):
+    # return write_to_disk(dest_groupname, current_array, encoding)
+
+
+def flatten_3d_list(lst_3d):
+    return [element for sublist_2d in lst_3d for sublist_1d in sublist_2d for element in sublist_1d]
+
+
+def search_dict_by_value(dictionary, value):
+    for key, val in dictionary.items():
+        if val == value:
+            return key
+    return None  # Value not found in the dictionary
+
+
+def write_to_disk(q):
+    while True:
+        try:
+            chunk, dest_groupname, encoding = q.get(timeout=10)  # Adjust timeout as necessary
+            
+            print(f"Starting write to {dest_groupname}...")
+            chunk.to_zarr(store=dest_groupname, mode="w", encoding=encoding)
+            print(f"Finished writing to {dest_groupname}.")
+        except queue.Empty:
+            break
+        finally:
+            q.task_done()
