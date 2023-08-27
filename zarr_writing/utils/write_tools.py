@@ -220,6 +220,9 @@ def get_sorted_morton_list(range_list, array_cube_side=2048):
 def get_chunk_morton_mapping(range_list, dest_folder_name):
     """
     Get names of chunks e.g. sabl2048b01, sabl2048b02, etc. and their corresponding first and last point Morton codes
+
+    :param range_list: 3D list of subarray cubes (e.g. 2048-cube is split into 512-cubes of 4x4x4). This 4x4x4 list is `range_list`
+    :param dest_folder_name: Name of the destination folder (e.g. sabl2048b)
     """
     sorted_morton_list = get_sorted_morton_list(range_list)
 

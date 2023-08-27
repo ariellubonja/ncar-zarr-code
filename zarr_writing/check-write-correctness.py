@@ -53,7 +53,7 @@ class VerifyWriteTest(unittest.TestCase):
         cubes, range_list = write_tools.prepare_data(raw_ncar_folder_path + "/jhd." + str(timestep_nr).zfill(3) + ".nc")
         cubes = flatten_3d_list(cubes)
 
-        chunk_morton_mapping = write_tools.get_chunk_morton_mapping(range_list, desired_cube_side)
+        chunk_morton_mapping = write_tools.get_chunk_morton_mapping(range_list, dest_folder_name)
 
         q = queue.Queue()
 
