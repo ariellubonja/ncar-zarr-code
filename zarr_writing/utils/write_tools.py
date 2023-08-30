@@ -133,8 +133,15 @@ def split_zarr_group(ds, smaller_size, dims):
                      dims[2]: slice(k * smaller_size, (k + 1) * smaller_size)} # nnx
                 )
 
-                # Existing code expects (512,512,512,1) instead of (512,512,512)
-                chunk = chunk.rechunk((smaller_size,smaller_size,smaller_size,1))
+                # # Existing code expects (512,512,512,1) instead of (512,512,512)
+                # chunk = chunk.data.rechunk((smaller_size,smaller_size,smaller_size,1))
+
+                # for var in chunk.data_vars:
+                #     if var == 'velocity':
+                #         if chunk[var].shape[-1] != 3:  # Ensure the shape is (512, 512, 512, 3)
+                #             chunk[var] = chunk[var].expand_dims('dim', axis=-1)
+                #     else:
+                #         chunk[var] = chunk[var].expand_dims('dim', axis=-1)  # Reshape to (512, 512, 512, 1)
 
                 inner_dim.append(chunk)
                 
