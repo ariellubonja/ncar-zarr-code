@@ -38,6 +38,9 @@ def prepare_data(xr_path, desired_cube_side=512, chunk_size=64, dask_local_dir='
     merged_velocity = merge_velocities(data_xr, chunk_size_base=chunk_size)
 
     for var in ['p', 't', 'e']:
+        # Add 4th dimension to each variable - we need them written (512,512,512,1)
+        merged_velocity[var] = merged_velocity[var].expand_dims('extra_dim', axis=-1)
+        # Rechunk zarr chunks to (64,64,64,1)
         merged_velocity[var] = merged_velocity[var].rechunk((chunk_size,chunk_size,chunk_size,1))
 
     # Unabbreviate 'e', 'p', 't' variable names
@@ -132,16 +135,6 @@ def split_zarr_group(ds, smaller_size, dims):
                      dims[1]: slice(j * smaller_size, (j + 1) * smaller_size), # nny
                      dims[2]: slice(k * smaller_size, (k + 1) * smaller_size)} # nnx
                 )
-
-                # # Existing code expects (512,512,512,1) instead of (512,512,512)
-                # chunk = chunk.data.rechunk((smaller_size,smaller_size,smaller_size,1))
-
-                # for var in chunk.data_vars:
-                #     if var == 'velocity':
-                #         if chunk[var].shape[-1] != 3:  # Ensure the shape is (512, 512, 512, 3)
-                #             chunk[var] = chunk[var].expand_dims('dim', axis=-1)
-                #     else:
-                #         chunk[var] = chunk[var].expand_dims('dim', axis=-1)  # Reshape to (512, 512, 512, 1)
 
                 inner_dim.append(chunk)
                 
