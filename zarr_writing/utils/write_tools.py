@@ -17,22 +17,31 @@ finally:
     import morton
 
 
-def prepare_data(xr_path, desired_cube_side=512, chunk_size=64, dask_local_dir='/home/idies/workspace/turb/data02_02', n_dask_workers=4):
-    print("Started preparing NetCDF data for verification. This will take ~20min")
+def prepare_data(xr_path, desired_cube_side=512, chunk_size=64, dask_local_dir='/home/idies/workspace/turb/data02_02', n_dask_workers=4): # use_dask=True
+    """
+    Prepare data for writing to FileDB. This includes:
+        - Merging velocity components
+        - Splitting into smaller chunks (64^3)
+        - Unabbreviating variable names
+        - Splitting 2048^3 arrays into 512^3 chunks
     
-    # for timestep_nr in timestep_range:
+    Assuming we'll always use dask bcs. why not
+    """
+
+    print("Started preparing NetCDF data for verification. This will take ~20min")
+    client = Client(n_workers=n_dask_workers, local_directory=dask_local_dir)
     data_xr = xr.open_dataset(xr_path)
 
     # Group 3 velocity components together
     # This fails with Dask bcs. of write permission error on SciServer Job
     # Never use dask with remote location on this!!
-    merged_velocity = merge_velocities(data_xr, dask_local_dir=dask_local_dir
-                                                , chunk_size_base=chunk_size, use_dask=True, n_dask_workers=n_dask_workers)
+    merged_velocity = merge_velocities(data_xr, chunk_size_base=chunk_size)
 
+    for var in ['p', 't', 'e']:
+        merged_velocity[var] = merged_velocity[var].rechunk((chunk_size,chunk_size,chunk_size,1))
 
     # Unabbreviate 'e', 'p', 't' variable names
     merged_velocity = merged_velocity.rename({'e': 'energy', 't': 'temperature', 'p': 'pressure'})
-
 
     dims = [dim for dim in data_xr.dims]
     dims.reverse() # use (nnz, nny, nnx) instead of (nnx, nny, nnz)
@@ -40,7 +49,7 @@ def prepare_data(xr_path, desired_cube_side=512, chunk_size=64, dask_local_dir='
     # Split 2048^3 into smaller 512^3 arrays
     smaller_groups, range_list = split_zarr_group(merged_velocity, desired_cube_side, dims)
 
-
+    client.close()
     print('Done preparing data. Starting to verify...')
 
     return smaller_groups, range_list
@@ -123,6 +132,10 @@ def split_zarr_group(ds, smaller_size, dims):
                      dims[1]: slice(j * smaller_size, (j + 1) * smaller_size), # nny
                      dims[2]: slice(k * smaller_size, (k + 1) * smaller_size)} # nnx
                 )
+
+                # Existing code expects (512,512,512,1) instead of (512,512,512)
+                chunk = chunk.rechunk((smaller_size,smaller_size,smaller_size,1))
+
                 inner_dim.append(chunk)
                 
                 a = []
@@ -143,32 +156,24 @@ def list_fileDB_folders():
     return [f'/home/idies/workspace/turb/data{str(d).zfill(2)}_{str(f).zfill(2)}/zarr/'  for f in range(1,4) for d in range(1,13)]
 
 
-def merge_velocities(data_xr, dask_local_dir, chunk_size_base=64, use_dask=True, n_dask_workers=2):
+def merge_velocities(data_xr, chunk_size_base=64):
     """
         Merge the 3 velocity components/directions - such merging exhibits faster 3-component reads. This is a Dask lazy computation
         
         :param data_xr: the dataset (Xarray group) with 3 velocity components to merge
         :param use_dask: Whether to run single-threaded or use Dask. I'm having problems with Dask:Nanny on SciServer Compute - https://github.com/dask/distributed/issues/3955
     """
-    
-    if use_dask:
-        client = Client(n_workers=n_dask_workers, local_directory=dask_local_dir)
 
     # Merge Velocities into 1
     b = da.stack([data_xr['u'], data_xr['v'], data_xr['w']], axis=3)
     # Make into correct chunk sizes
     b = b.rechunk((chunk_size_base,chunk_size_base,chunk_size_base,3))
     
-    
-    
 
     # Drop individual velocities
     result = data_xr.drop_vars(['u', 'v', 'w'])
     # Add joined velocity to original group
     result['velocity'] = xr.DataArray(b, dims=('nnz', 'nny', 'nnx', 'velocity component (xyz)'))
-    
-    if use_dask:
-        client.close()
 
     return result
 
