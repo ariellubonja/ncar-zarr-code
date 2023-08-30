@@ -28,10 +28,22 @@ def verify_512_cube(original_512, zarr_512_path):
     # Compare attributes
     assert original_512.attrs == zarr_512.attrs, f"Attribute mismatch for {zarr_512_path}."
 
-    # Compare each variable's data
+    # Check...
     for var in original_512.data_vars:
+        # Data
         assert np.array_equal(original_512[var].values, zarr_512[var].values), f"Data mismatch found for variable {var} in {zarr_512_path}."
+        
+        # Attributes
         assert original_512[var].attrs == zarr_512[var].attrs, f"Variable attribute mismatch for variable {var} in {zarr_512_path}."
+
+        # Dimensions
+        expected_shape = (512, 512, 512, 3) if var == "velocity" else (512, 512, 512, 1)
+        assert zarr_512[var].shape == expected_shape, f"Unexpected dimensions for variable {var} in {zarr_512_path}."
+
+        # Chunk Sizes
+        expected_chunksize = (64, 64, 64, 3) if var == "velocity" else (64, 64, 64, 1)
+        assert zarr_512[var].data.chunksize == expected_chunksize, f"Unexpected chunk size for variable {var} in {zarr_512_path}."
+
 
 
 class VerifyWriteTest(unittest.TestCase):
