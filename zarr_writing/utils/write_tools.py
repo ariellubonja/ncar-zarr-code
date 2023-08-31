@@ -29,7 +29,7 @@ def prepare_data(xr_path, desired_cube_side=512, chunk_size=64, dask_local_dir='
     """
 
     print("Started preparing NetCDF data for verification. This will take ~20min")
-    client = Client(n_workers=n_dask_workers, local_directory=dask_local_dir, memory_limit='500GB', processes=False)
+    client = Client(n_workers=n_dask_workers, local_directory=dask_local_dir, memory_limit='600GB', processes=False)
     data_xr = xr.open_dataset(xr_path)
 
     # Group 3 velocity components together
@@ -40,7 +40,7 @@ def prepare_data(xr_path, desired_cube_side=512, chunk_size=64, dask_local_dir='
     client.close()
 
     for var in ['p', 't', 'e']:
-        client = Client(n_workers=2, local_directory=dask_local_dir, processes=False, memory_limit='500GB')
+        client = Client(n_workers=2, local_directory=dask_local_dir, processes=False, memory_limit='600GB')
         # Add 4th dimension to each variable - we need them written (512,512,512,1)
         merged_velocity[var] = merged_velocity[var].expand_dims('extra_dim', axis=-1)
         # Rechunk zarr chunks to (64,64,64,1)
