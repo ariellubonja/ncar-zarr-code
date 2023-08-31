@@ -37,11 +37,16 @@ def prepare_data(xr_path, desired_cube_side=512, chunk_size=64, dask_local_dir='
     # Never use dask with remote location on this!!
     merged_velocity = merge_velocities(data_xr, chunk_size_base=chunk_size)
 
+    client.close()
+
     for var in ['p', 't', 'e']:
+        client = Client(n_workers=2, local_directory=dask_local_dir)
         # Add 4th dimension to each variable - we need them written (512,512,512,1)
         merged_velocity[var] = merged_velocity[var].expand_dims('extra_dim', axis=-1)
         # Rechunk zarr chunks to (64,64,64,1)
         merged_velocity[var] = merged_velocity[var].chunk((chunk_size,chunk_size,chunk_size,1))
+
+        client.close()
 
     # Unabbreviate 'e', 'p', 't' variable names
     merged_velocity = merged_velocity.rename({'e': 'energy', 't': 'temperature', 'p': 'pressure'})
@@ -52,7 +57,6 @@ def prepare_data(xr_path, desired_cube_side=512, chunk_size=64, dask_local_dir='
     # Split 2048^3 into smaller 512^3 arrays
     smaller_groups, range_list = split_zarr_group(merged_velocity, desired_cube_side, dims)
 
-    client.close()
     print('Done preparing data. Starting to verify...')
 
     return smaller_groups, range_list
