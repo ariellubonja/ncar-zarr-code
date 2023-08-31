@@ -29,7 +29,7 @@ def prepare_data(xr_path, desired_cube_side=512, chunk_size=64, dask_local_dir='
     """
 
     print("Started preparing NetCDF data for verification. This will take ~20min")
-    client = Client(n_workers=n_dask_workers, local_directory=dask_local_dir, memory_limit='200GB', processes=False)
+    client = Client(n_workers=n_dask_workers, local_directory=dask_local_dir, processes=False)
     data_xr = xr.open_dataset(xr_path)
 
     # Group 3 velocity components together
