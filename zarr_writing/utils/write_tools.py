@@ -29,7 +29,7 @@ def prepare_data(xr_path, desired_cube_side=512, chunk_size=64, dask_local_dir='
     """
 
     print("Started preparing NetCDF data for verification. This will take ~20min")
-    client = Client(n_workers=n_dask_workers, local_directory=dask_local_dir, memory_limit='800GB', processes=False)
+    client = Client(n_workers=n_dask_workers, local_directory=dask_local_dir)
     data_xr = xr.open_dataset(xr_path)
 
     # Group 3 velocity components together
@@ -258,6 +258,10 @@ def write_to_disk(q):
         try:
             chunk, dest_groupname, encoding = q.get(timeout=10)  # Adjust timeout as necessary
             
+            for var in ['p', 't', 'e']:
+                # Add 4th dimension to each variable - we need them written (512,512,512,1)
+                chunk[var] = chunk[var].expand_dims('extra_dim', axis=-1)
+
             print(f"Starting write to {dest_groupname}...")
             chunk.to_zarr(store=dest_groupname, mode="w", encoding=encoding)
             print(f"Finished writing to {dest_groupname}.")
