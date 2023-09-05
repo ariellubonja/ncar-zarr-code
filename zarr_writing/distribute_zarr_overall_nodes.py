@@ -130,24 +130,25 @@ def extract_and_convert_idxs(
     node_assignment:str, 
     xs_ys_zs:Tuple[GivernyIndex, GivernyIndex, GivernyIndex],
 ) -> str:
-
+    # Logging
     logger_file_path = os.path.join(
         os.path.dirname(os.path.abspath(__file__)),
         "logs",
         f"{'.'.join(map(str, xs_ys_zs))}.child.log"
     )
-
     logger = setup_logger(
         f"distribute_zarr_job_{str(xs_ys_zs)}",
         logger_file_path,
     )
-    
     if os.path.exists(logger_file_path):
         with open(logger_file_path, "r") as f:
             if "Completed job" in f.read():
                 logger.info("Job already completed.")
                 return
-    
+
+
+
+    # TODO This is hard coded
     variable = "velocity"
     output_path = f"/home/idies/workspace/turb/data01_01/zarr/tmp_ryan/turbulence2-read_box_data/turbulence_output/turb_out_{variable}"
     dataset_title = "isotropic8192"
@@ -157,7 +158,9 @@ def extract_and_convert_idxs(
     
     try:
         start = time()
-        velocity_cube, location = retrieve_data( # TODO How does the return look like?
+        # TODO Rewrite this for NCAR
+        # TODO How does the return look like?
+        velocity_cube, location = retrieve_data(
             xs_ys_zs,
             dataset_title,
             output_path,
@@ -237,9 +240,10 @@ def extract_and_convert_idxs(
             return f"Saving to {path} failed = {type(e)}, {str(e)}"
     
         return "Success!"
-    
+
+    # TODO I need to rewrite these 2 fns. for NCAR
     prod_path = convert_path_to_zarr(folder_name_idxs, node_assignment, location)
-    back_path = convert_prod_path_to_backup_path(folder_name_idxs, prod_path) 
+    back_path = convert_prod_path_to_backup_path(folder_name_idxs, prod_path)
     
     logger.info("Saving data...")
     start = time()
@@ -291,16 +295,17 @@ def convert_binary(
         assignable_nodes, 
         key=lambda s: (s[-2:], s[4:6])
     )
-    
+
+    # Get Node assignments, create Quadruple
     node_assignments = np.load("node_assignment.npy") - 1
-    
     def transform_idxs_to_job(
         xs_ys_zs:Tuple[GivernyIndex, GivernyIndex, GivernyIndex]
     ) -> Tuple[str, Tuple[GivernyIndex, GivernyIndex, GivernyIndex]]:
         x, y, z = convert_idx(xs_ys_zs)
         node_assignment = assignable_nodes[node_assignments[x, y, z]]
         return (time_step, folder_name_idxs, node_assignment, xs_ys_zs)
-    
+
+    # Logging
     parent_log_dir = os.path.join(
         os.path.dirname(os.path.abspath(__file__)),
         "logs",
@@ -311,23 +316,19 @@ def convert_binary(
         "distribute_zarr_job_all",
         parent_log_dir,
     )
-    
+
+    # TODO ??
     x_ranges = get_range(*xs)
     y_ranges = get_range(*ys)
     z_ranges = get_range(*zs)
-    
-    idxs = list(product(x_ranges, y_ranges, z_ranges))
-    
-    logger.info(f"Working on {idxs}")
-    
-    assignments_idxs = list(map(transform_idxs_to_job, idxs))
-        
-    # logger.info(f"Jobs {assignments_idxs}")
 
+    # TODO All combinations of x,y,z ranges - why?
+    idxs = list(product(x_ranges, y_ranges, z_ranges))
+    logger.info(f"Working on {idxs}")
+    assignments_idxs = list(map(transform_idxs_to_job, idxs)) # Call create Quadruple fn.
     logger.info("Starting jobs...")
     
     start = time()
-    
     try:
         n_jobs = len(assignments_idxs)
         if n_jobs > 1 and n_procs > 1:
@@ -337,6 +338,8 @@ def convert_binary(
                     logger.info(f"Completed cube {i}: {msg}")
         else:
             logger.info("working in serial")
+
+            # Extract and convert idxs is a misnomer, it actually does the whole job
             for i, msg in enumerate(starmap(extract_and_convert_idxs, assignments_idxs)):
                 logger.info(f"Completed cube {i}: {msg}")
                 
