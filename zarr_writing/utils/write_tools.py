@@ -39,15 +39,6 @@ def prepare_data(xr_path, desired_cube_side=512, chunk_size=64, dask_local_dir='
 
     client.close()
 
-    for var in ['p', 't', 'e']:
-        client = Client(n_workers=2, local_directory=dask_local_dir, processes=False, memory_limit='800GB')
-        # Add 4th dimension to each variable - we need them written (512,512,512,1)
-        merged_velocity[var] = merged_velocity[var].expand_dims('extra_dim', axis=-1)
-        # Rechunk zarr chunks to (64,64,64,1)
-        # merged_velocity[var] = merged_velocity[var].chunk((chunk_size,chunk_size,chunk_size,1))
-
-        client.close()
-
     # Unabbreviate 'e', 'p', 't' variable names
     merged_velocity = merged_velocity.rename({'e': 'energy', 't': 'temperature', 'p': 'pressure'})
 

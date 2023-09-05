@@ -68,7 +68,7 @@ if __name__ == '__main__':
         
         destination = os.path.join(folders[filedb_index], dest_folder_name + str(idx).zfill(2) + "_" + str(timestep_nr).zfill(3) + ".zarr")
         
-        current_array = cubes[i]
+        current_array = cubes[i].expand_dims('extra_dim', axis=-1)
                 
         q.put((current_array, destination, encoding))
     
