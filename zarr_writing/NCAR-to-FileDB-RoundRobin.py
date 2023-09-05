@@ -14,7 +14,7 @@ write_type = "prod" # or "back" for backup
 n_dask_workers = 4 # For Dask rechunking
 
 # Kernel dies with Sciserver large jobs resources as of Aug 2023. Out of memory IMO
-num_threads = 34  # For writing to FileDB
+num_threads = 2  # For writing to FileDB
 dask_local_dir = '/home/idies/workspace/turb/data02_02'
 
 
@@ -68,7 +68,7 @@ if __name__ == '__main__':
         
         destination = os.path.join(folders[filedb_index], dest_folder_name + str(idx).zfill(2) + "_" + str(timestep_nr).zfill(3) + ".zarr")
         
-        current_array = cubes[i].expand_dims('extra_dim', axis=-1)
+        current_array = cubes[i]
                 
         q.put((current_array, destination, encoding))
     
