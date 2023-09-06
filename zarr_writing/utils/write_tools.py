@@ -227,10 +227,7 @@ def get_chunk_morton_mapping(range_list, dest_folder_name):
     sorted_morton_list = get_sorted_morton_list(range_list)
 
     chunk_morton_mapping = {}
-    for i in range(len(range_list)):            
-        min_coord = [a[0] for a in range_list[i]]
-        max_coord = [a[1] - 1 for a in range_list[i]]
-                
+    for i in range(len(range_list)):
         chunk_morton_mapping[dest_folder_name + str(i + 1).zfill(2)] = sorted_morton_list[i]
     
     return chunk_morton_mapping
@@ -258,7 +255,7 @@ def write_to_disk(q):
         try:
             chunk, dest_groupname, encoding = q.get(timeout=10)  # Adjust timeout as necessary
             
-            for var in ['p', 't', 'e']:
+            for var in ['p', 't', 'e']: # TODO Aren't these called 'energy', 'pressure' etc. now?
                 # Add 4th dimension to each variable - we need them written (512,512,512,1)
                 chunk[var] = chunk[var].expand_dims('extra_dim', axis=-1)
 
