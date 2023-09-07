@@ -1,6 +1,6 @@
 import os
 from utils import write_tools
-import queue, threading, argparse, sys
+import queue, threading, argparse
 
 
 array_cube_side = 2048
