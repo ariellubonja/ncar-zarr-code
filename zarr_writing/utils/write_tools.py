@@ -156,7 +156,6 @@ def merge_velocities(data_xr, chunk_size_base=64):
         Merge the 3 velocity components/directions - such merging exhibits faster 3-component reads. This is a Dask lazy computation
         
         :param data_xr: the dataset (Xarray group) with 3 velocity components to merge
-        :param use_dask: Whether to run single-threaded or use Dask. I'm having problems with Dask:Nanny on SciServer Compute - https://github.com/dask/distributed/issues/3955
     """
 
     # Merge Velocities into 1
@@ -178,29 +177,6 @@ def morton_pack(array_cube_side, x,y,z):
     mortoncurve = morton.Morton(dimensions = 3, bits = bits)
 
     return mortoncurve.pack(x, y, z)
-
-
-def morton_order_cube(cube_side: int):
-    """
-    DEPRECATED in favor of Ryan's `node_assignment()`
-    For a 3D list (list of lists of lists), return the z-order of those lists
-    
-    :param cube_side: Length of the cube side to be z-ordered
-    """
-
-    z_order = []
-    # Z-order the cube of points so they "linearize" far from each other
-    for i in range(cube_side):
-        a = []
-        for j in range(cube_side):
-            b = []
-            for k in range(cube_side):
-                z_position = morton_pack(cube_side, i,j,k)
-                b.append(z_position)
-            a.append(b)
-        z_order.append(a)
-
-    return z_order
 
 
 def get_sorted_morton_list(range_list, array_cube_side=2048):
