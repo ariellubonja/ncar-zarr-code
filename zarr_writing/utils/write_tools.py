@@ -158,18 +158,6 @@ def merge_velocities(data_xr, chunk_size_base=64):
         :param data_xr: the dataset (Xarray group) with 3 velocity components to merge
     """
 
-    b = da.stack([data_xr['e']], axis=3)
-    b = b.rechunk((64,64,64,1))
-    data_xr['e'] = xr.DataArray(b, dims=('nnz', 'nny', 'nnx', 'extra_dim'))
-
-    b = da.stack([data_xr['t']], axis=3)
-    b = b.rechunk((64,64,64,1))
-    data_xr['t'] = xr.DataArray(b, dims=('nnz', 'nny', 'nnx', 'extra_dim'))
-
-    b = da.stack([data_xr['p']], axis=3)
-    b = b.rechunk((64,64,64,1))
-    data_xr['p'] = xr.DataArray(b, dims=('nnz', 'nny', 'nnx', 'extra_dim'))
-
     # Merge Velocities into 1
     b = da.stack([data_xr['u'], data_xr['v'], data_xr['w']], axis=3)
     # Make into correct chunk sizes
@@ -300,6 +288,18 @@ def write_to_disk(q):
     while True:
         try:
             chunk, dest_groupname, encoding = q.get(timeout=10)  # Adjust timeout as necessary
+
+            b = da.stack([chunk['energy']], axis=3)
+            b = b.rechunk((64, 64, 64, 1))
+            chunk['energy'] = xr.DataArray(b, dims=('nnz', 'nny', 'nnx', 'extra_dim'))
+
+            b = da.stack([chunk['temperature']], axis=3)
+            b = b.rechunk((64, 64, 64, 1))
+            chunk['temperature'] = xr.DataArray(b, dims=('nnz', 'nny', 'nnx', 'extra_dim'))
+
+            b = da.stack([chunk['pressure']], axis=3)
+            b = b.rechunk((64, 64, 64, 1))
+            chunk['pressure'] = xr.DataArray(b, dims=('nnz', 'nny', 'nnx', 'extra_dim'))
 
             print(f"Starting write to {dest_groupname}...")
             chunk.to_zarr(store=dest_groupname, mode="w", encoding=encoding)
