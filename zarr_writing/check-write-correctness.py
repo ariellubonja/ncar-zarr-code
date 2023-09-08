@@ -2,9 +2,8 @@ import unittest
 import zarr
 import numpy as np
 from utils import write_tools
-from utils.write_tools import flatten_3d_list, search_dict_by_value
+from utils.write_tools import flatten_3d_list
 import argparse, sys
-import os
 
 array_cube_side = 2048
 raw_ncar_folder_path = '/home/idies/workspace/turb/data02_02/ncar-high-rate-fixed-dt'
@@ -18,43 +17,13 @@ class VerifyWriteTest(unittest.TestCase):
         timestep_nr = args.timestep
         self.queue = []
 
-        folders = write_tools.list_fileDB_folders()
-
-        # Avoiding 7-2 and 9-2 - they're too full as of May 2023
-        folders.remove("/home/idies/workspace/turb/data09_02/zarr/")
-        folders.remove("/home/idies/workspace/turb/data07_02/zarr/")
-
-        for i in range(len(folders)):
-            folders[i] += dest_folder_name + "_" + str(i + 1).zfill(2) + "_" + write_type + "/"
-
-        cubes, range_list = write_tools.prepare_data(raw_ncar_folder_path + "/jhd." + str(timestep_nr).zfill(3) + ".nc")
+        cubes, _ = write_tools.prepare_data(raw_ncar_folder_path + "/jhd." + str(timestep_nr).zfill(3) + ".nc")
         cubes = flatten_3d_list(cubes)
 
-        chunk_morton_mapping = write_tools.get_chunk_morton_mapping(range_list, dest_folder_name)
-        node_assignments = write_tools.node_assignment(cube_side=4)
-        flattened_node_assgn = flatten_3d_list(node_assignments)
+        dests = write_tools.get_512_chunk_destinations(dest_folder_name, write_type, timestep_nr, array_cube_side)
 
-        for i in range(len(range_list)):
-            min_coord = [a[0] for a in range_list[i]]
-            max_coord = [a[1] - 1 for a in range_list[i]]
-
-            morton = (
-                write_tools.morton_pack(array_cube_side, min_coord[2], min_coord[1], min_coord[0]),
-                write_tools.morton_pack(array_cube_side, max_coord[2], max_coord[1], max_coord[0])
-            )
-
-            chunk_name = search_dict_by_value(chunk_morton_mapping, morton)
-
-            idx = int(chunk_name[-2:].lstrip('0'))
-
-            filedb_index = flattened_node_assgn[idx - 1] - 1
-
-            destination = os.path.join(folders[filedb_index],
-                                       dest_folder_name + str(idx).zfill(2) + "_" + str(timestep_nr).zfill(3) + ".zarr")
-
-            current_array = cubes[i]
-
-            self.queue.append((current_array, destination))
+        for i in range(len(dests)):
+            self.queue.append((cubes[i], dests[i]))
 
     def test_data_comparison(self):
         for original_512, zarr_512_path in self.queue:
