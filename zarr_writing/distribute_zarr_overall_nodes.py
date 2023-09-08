@@ -51,12 +51,12 @@ def retrieve_data(
 ) -> Tuple[np.ndarray, str]:
     xs, ys, zs = idxs
     cube = dataset.iso_cube(dataset_title = dataset_title, output_path=output_path)
-    with stdout_redirector():
-        axes_ranges = bg.assemble_axis_data([xs, ys, zs])
-        strides = bg.assemble_axis_data([1, 1, 1])
-        cutout_data, fname = tt.getCutout(cube, variable, timepoint, axes_ranges, strides)
+    # with stdout_redirector():
+    axes_ranges = bg.assemble_axis_data([xs, ys, zs])
+    strides = bg.assemble_axis_data([1, 1, 1])
+    cutout_data = tt.getCutout(cube, variable, timepoint, axes_ranges, strides)
 
-    return cutout_data, fname
+    return cutout_data
 
         
 def convert_idx(
@@ -154,6 +154,9 @@ def extract_and_convert_idxs(
     total_start = time()
     
     logger.info(f"Retrieving velocity at t={timepoint}...")
+    
+    print(xs_ys_zs)
+    return
     
     try:
         start = time()
@@ -321,6 +324,11 @@ def convert_binary(
     logger.info(f"Working on {idxs}")
     
     assignments_idxs = list(map(transform_idxs_to_job, idxs))
+    
+        
+    # print(assignments_idxs)
+    # print(idxs)
+    # return
         
     # logger.info(f"Jobs {assignments_idxs}")
 
