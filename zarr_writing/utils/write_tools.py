@@ -168,15 +168,15 @@ def merge_velocities(data_xr, chunk_size_base=64):
     result['velocity'] = xr.DataArray(b, dims=('nnz', 'nny', 'nnx', 'velocity component (xyz)'))
 
     b = data_xr['e']
-    b = b.rechunk((chunk_size_base,chunk_size_base,chunk_size_base,1))
+    b = b.chunk((chunk_size_base,chunk_size_base,chunk_size_base,1))
     result['e'] = xr.DataArray(b, dims=('nnz', 'nny', 'nnx', 'extra_dim'))
 
     b = data_xr['t']
-    b = b.rechunk((chunk_size_base,chunk_size_base,chunk_size_base,1))
+    b = b.chunk((chunk_size_base,chunk_size_base,chunk_size_base,1))
     result['t'] = xr.DataArray(b, dims=('nnz', 'nny', 'nnx', 'extra_dim'))
 
     b = data_xr['p']
-    b = b.rechunk((chunk_size_base, chunk_size_base, chunk_size_base, 1))
+    b = b.chunk((chunk_size_base, chunk_size_base, chunk_size_base, 1))
     result['p'] = xr.DataArray(b, dims=('nnz', 'nny', 'nnx', 'extra_dim'))
 
     return result
