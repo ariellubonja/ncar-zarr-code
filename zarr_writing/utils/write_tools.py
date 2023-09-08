@@ -162,12 +162,22 @@ def merge_velocities(data_xr, chunk_size_base=64):
     b = da.stack([data_xr['u'], data_xr['v'], data_xr['w']], axis=3)
     # Make into correct chunk sizes
     b = b.rechunk((chunk_size_base,chunk_size_base,chunk_size_base,3))
-    
+    result = data_xr.drop_vars(['u', 'v', 'w'])  # Drop individual velocities
 
-    # Drop individual velocities
-    result = data_xr.drop_vars(['u', 'v', 'w'])
     # Add joined velocity to original group
     result['velocity'] = xr.DataArray(b, dims=('nnz', 'nny', 'nnx', 'velocity component (xyz)'))
+
+    b = data_xr['e']
+    b = b.rechunk((chunk_size_base,chunk_size_base,chunk_size_base,1))
+    result['e'] = xr.DataArray(b, dims=('nnz', 'nny', 'nnx', 'extra_dim'))
+
+    b = data_xr['t']
+    b = b.rechunk((chunk_size_base,chunk_size_base,chunk_size_base,1))
+    result['t'] = xr.DataArray(b, dims=('nnz', 'nny', 'nnx', 'extra_dim'))
+
+    b = data_xr['p']
+    b = b.rechunk((chunk_size_base, chunk_size_base, chunk_size_base, 1))
+    result['p'] = xr.DataArray(b, dims=('nnz', 'nny', 'nnx', 'extra_dim'))
 
     return result
 
@@ -289,10 +299,6 @@ def write_to_disk(q):
     while True:
         try:
             chunk, dest_groupname, encoding = q.get(timeout=10)  # Adjust timeout as necessary
-            
-            for var in ['p', 't', 'e']: # TODO Aren't these called 'energy', 'pressure' etc. now?
-                # Add 4th dimension to each variable - we need them written (512,512,512,1)
-                chunk[var] = chunk[var].expand_dims('extra_dim', axis=-1)
 
             print(f"Starting write to {dest_groupname}...")
             chunk.to_zarr(store=dest_groupname, mode="w", encoding=encoding)
