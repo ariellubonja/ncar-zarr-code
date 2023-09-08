@@ -3,6 +3,7 @@ import xarray as xr
 import numpy as np
 import os
 from utils import write_tools
+from utils.write_tools import flatten_3d_list, search_dict_by_value
 import queue, threading, argparse, sys
 
 
@@ -138,17 +139,6 @@ def verify_write(q):
             print(f"Data mismatch found for {zarr_512_path}.")
         finally:
             q.task_done()
-
-            
-def flatten_3d_list(lst_3d):
-    return [element for sublist_2d in lst_3d for sublist_1d in sublist_2d for element in sublist_1d]
-
-
-def search_dict_by_value(dictionary, value):
-    for key, val in dictionary.items():
-        if val == value:
-            return key
-    return None  # Value not found in the dictionary
 
 
 if __name__ == '__main__':
