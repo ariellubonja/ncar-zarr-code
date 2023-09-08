@@ -158,17 +158,17 @@ def merge_velocities(data_xr, chunk_size_base=64):
         :param data_xr: the dataset (Xarray group) with 3 velocity components to merge
     """
 
-    b = data_xr['e']
-    b = b.chunk((chunk_size_base,chunk_size_base,chunk_size_base,1))
-    data_xr['e'] = b#xr.DataArray(b, dims=('nnz', 'nny', 'nnx', 'extra_dim'))
+    b = da.stack([data_xr['e']], axis=3)
+    b = b.rechunk((64,64,64,1))
+    data_xr['e'] = xr.DataArray(b, dims=('nnz', 'nny', 'nnx', 'extra_dim'))
 
-    b = data_xr['t']
-    b = b.chunk((chunk_size_base,chunk_size_base,chunk_size_base,1))
-    data_xr['t'] = b#xr.DataArray(b, dims=('nnz', 'nny', 'nnx', 'extra_dim'))
+    b = da.stack([data_xr['t']], axis=3)
+    b = b.rechunk((64,64,64,1))
+    data_xr['t'] = xr.DataArray(b, dims=('nnz', 'nny', 'nnx', 'extra_dim'))
 
-    b = data_xr['p']
-    b = b.chunk((chunk_size_base, chunk_size_base, chunk_size_base, 1))
-    data_xr['p'] = b#xr.DataArray(b, dims=('nnz', 'nny', 'nnx', 'extra_dim'))
+    b = da.stack([data_xr['p']], axis=3)
+    b = b.rechunk((64,64,64,1))
+    data_xr['p'] = xr.DataArray(b, dims=('nnz', 'nny', 'nnx', 'extra_dim'))
 
     # Merge Velocities into 1
     b = da.stack([data_xr['u'], data_xr['v'], data_xr['w']], axis=3)
