@@ -3,6 +3,7 @@ import queue, threading, argparse
 import dask.array as da
 import xarray as xr
 import gc
+from dask.distributed import Client
 
 
 array_cube_side = 2048
@@ -38,6 +39,8 @@ if __name__ == '__main__':
     cubes = write_tools.flatten_3d_list(cubes)
 
     for cube in cubes:
+        client = Client(n_workers=1, local_directory=dask_local_dir)
+
         b = da.stack([cube['energy']], axis=3)
         b = b.rechunk((64, 64, 64, 1))
         cube['energy'] = xr.DataArray(b, dims=('nnz', 'nny', 'nnx', 'extra_dim'))
@@ -55,6 +58,8 @@ if __name__ == '__main__':
         cube['pressure'] = xr.DataArray(b, dims=('nnz', 'nny', 'nnx', 'extra_dim'))
 
         gc.collect()
+
+        client.close()
 
     q = queue.Queue()
 
