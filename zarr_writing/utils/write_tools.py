@@ -289,18 +289,6 @@ def write_to_disk(q):
         try:
             chunk, dest_groupname, encoding = q.get(timeout=10)  # Adjust timeout as necessary
 
-            b = da.stack([chunk['energy']], axis=3)
-            b = b.rechunk((64, 64, 64, 1))
-            chunk['energy'] = xr.DataArray(b, dims=('nnz', 'nny', 'nnx', 'extra_dim'))
-
-            b = da.stack([chunk['temperature']], axis=3)
-            b = b.rechunk((64, 64, 64, 1))
-            chunk['temperature'] = xr.DataArray(b, dims=('nnz', 'nny', 'nnx', 'extra_dim'))
-
-            b = da.stack([chunk['pressure']], axis=3)
-            b = b.rechunk((64, 64, 64, 1))
-            chunk['pressure'] = xr.DataArray(b, dims=('nnz', 'nny', 'nnx', 'extra_dim'))
-
             print(f"Starting write to {dest_groupname}...")
             chunk.to_zarr(store=dest_groupname, mode="w", encoding=encoding)
             print(f"Finished writing to {dest_groupname}.")

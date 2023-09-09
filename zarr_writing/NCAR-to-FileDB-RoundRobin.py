@@ -1,6 +1,8 @@
-import os
 from utils import write_tools
 import queue, threading, argparse
+import dask.array as da
+import xarray as xr
+import gc
 
 
 array_cube_side = 2048
@@ -14,7 +16,7 @@ write_type = "prod" # or "back" for backup
 n_dask_workers = 4 # For Dask rechunking
 
 # Kernel dies with Sciserver large jobs resources as of Aug 2023. Out of memory IMO
-num_threads = 2  # For writing to FileDB
+num_threads = 34  # For writing to FileDB
 dask_local_dir = '/home/idies/workspace/turb/data02_02'
 
 
@@ -34,6 +36,25 @@ if __name__ == '__main__':
 
     cubes, _ = write_tools.prepare_data(raw_ncar_folder_path + "/jhd." + str(timestep_nr).zfill(3) + ".nc")
     cubes = write_tools.flatten_3d_list(cubes)
+
+    for cube in cubes:
+        b = da.stack([cube['energy']], axis=3)
+        b = b.rechunk((64, 64, 64, 1))
+        cube['energy'] = xr.DataArray(b, dims=('nnz', 'nny', 'nnx', 'extra_dim'))
+
+        gc.collect()
+
+        b = da.stack([cube['temperature']], axis=3)
+        b = b.rechunk((64, 64, 64, 1))
+        cube['temperature'] = xr.DataArray(b, dims=('nnz', 'nny', 'nnx', 'extra_dim'))
+
+        gc.collect()
+
+        b = da.stack([cube['pressure']], axis=3)
+        b = b.rechunk((64, 64, 64, 1))
+        cube['pressure'] = xr.DataArray(b, dims=('nnz', 'nny', 'nnx', 'extra_dim'))
+
+        gc.collect()
 
     q = queue.Queue()
 
