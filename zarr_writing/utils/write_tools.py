@@ -3,6 +3,7 @@ import xarray as xr
 import os
 import dask.array as da
 from dask.distributed import Client
+import dask
 import math, queue
 from itertools import product
 
@@ -30,16 +31,21 @@ def prepare_data(xr_path, desired_cube_side=512, chunk_size=64, dask_local_dir='
 
     print("Started preparing NetCDF data for verification. This will take ~20min")
     client = Client(n_workers=n_dask_workers, local_directory=dask_local_dir)
-    data_xr = xr.open_dataset(xr_path)
+    data_xr = xr.open_dataset(xr_path, chunks={'nnz': chunk_size, 'nny': chunk_size, 'nnx': chunk_size})
+
+    assert type(data_xr['e'].data) == dask.array.core.Array
+
+    # Add an extra dimension to the data to match isotropic8192
+    data_xr = data_xr.expand_dims({'extra_dim': [1]})
+    # The above adds the extra dimension to the start. Fix that - in the back
+    data_xr = data_xr.transpose('nnz', 'nny', 'nnx', 'extra_dim')
 
     # Group 3 velocity components together
-    # This fails with Dask bcs. of write permission error on SciServer Job
     # Never use dask with remote location on this!!
     merged_velocity = merge_velocities(data_xr, chunk_size_base=chunk_size)
 
     client.close()
 
-    # Unabbreviate 'e', 'p', 't' variable names
     merged_velocity = merged_velocity.rename({'e': 'energy', 't': 'temperature', 'p': 'pressure'})
 
     dims = [dim for dim in data_xr.dims]
@@ -160,12 +166,13 @@ def merge_velocities(data_xr, chunk_size_base=64):
 
     # Merge Velocities into 1
     b = da.stack([data_xr['u'], data_xr['v'], data_xr['w']], axis=3)
+    b = b.squeeze() # It should be (2048, 2048, 2048, 3, 1) before this. Use (2048, 2048, 2048, 3)
     # Make into correct chunk sizes
-    b = b.rechunk((chunk_size_base,chunk_size_base,chunk_size_base,3))
+    b = b.rechunk((chunk_size_base,chunk_size_base,chunk_size_base,3)) # Dask chooses (64,64,64,1)
     result = data_xr.drop_vars(['u', 'v', 'w'])  # Drop individual velocities
 
     # Add joined velocity to original group
-    result['velocity'] = xr.DataArray(b, dims=('nnz', 'nny', 'nnx', 'velocity component (xyz)'))
+    result['velocity'] = xr.DataArray(b, dims=('nnz', 'nny', 'nnx', 'extra_dim'))
 
 
     return result
