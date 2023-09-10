@@ -30,7 +30,7 @@ def prepare_data(xr_path, desired_cube_side=512, chunk_size=64, dask_local_dir='
     """
 
     print("Started preparing NetCDF data for verification. This will take ~20min")
-    client = Client(n_workers=n_dask_workers, local_directory=dask_local_dir)
+    # client = Client(n_workers=n_dask_workers, local_directory=dask_local_dir)
     data_xr = xr.open_dataset(xr_path, chunks={'nnz': chunk_size, 'nny': chunk_size, 'nnx': chunk_size})
 
     assert type(data_xr['e'].data) == dask.array.core.Array
@@ -44,7 +44,7 @@ def prepare_data(xr_path, desired_cube_side=512, chunk_size=64, dask_local_dir='
     # Never use dask with remote location on this!!
     merged_velocity = merge_velocities(data_xr, chunk_size_base=chunk_size)
 
-    client.close()
+    # client.close()
 
     merged_velocity = merged_velocity.rename({'e': 'energy', 't': 'temperature', 'p': 'pressure'})
 
