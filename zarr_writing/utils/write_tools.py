@@ -42,7 +42,7 @@ def prepare_data(xr_path, desired_cube_side=512, chunk_size=64, dask_local_dir='
 
     # Group 3 velocity components together
     # Never use dask with remote location on this!!
-    merged_velocity = merge_velocities(transposed_ds, data_xr, chunk_size_base=chunk_size)
+    merged_velocity = merge_velocities(transposed_ds, chunk_size_base=chunk_size)
 
     # client.close()
 
@@ -157,7 +157,7 @@ def list_fileDB_folders():
     return [f'/home/idies/workspace/turb/data{str(d).zfill(2)}_{str(f).zfill(2)}/zarr/'  for f in range(1,4) for d in range(1,13)]
 
 
-def merge_velocities(transposed_ds, data_xr, chunk_size_base=64):
+def merge_velocities(transposed_ds, chunk_size_base=64):
     """
         Merge the 3 velocity components/directions - such merging exhibits faster 3-component reads. This is a Dask lazy computation
         
@@ -169,10 +169,10 @@ def merge_velocities(transposed_ds, data_xr, chunk_size_base=64):
     b = b.squeeze() # It should be (2048, 2048, 2048, 3, 1) before this. Use (2048, 2048, 2048, 3)
     # Make into correct chunk sizes
     b = b.rechunk((chunk_size_base,chunk_size_base,chunk_size_base,3)) # Dask chooses (64,64,64,1)
-    result = data_xr.drop_vars(['u', 'v', 'w'])  # Drop individual velocities
+    result = transposed_ds.drop_vars(['u', 'v', 'w'])  # Drop individual velocities
 
     # Add joined velocity to original group
-    result['velocity'] = xr.DataArray(b, dims=('nnz', 'nny', 'nnx', 'extra_dim'))
+    result['velocity'] = xr.DataArray(b, dims=('nnz', 'nny', 'nnx', 'velocity component (xyz)')) # Can't make the dim name same as scalars
 
 
     return result
