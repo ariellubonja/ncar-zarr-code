@@ -36,13 +36,13 @@ def prepare_data(xr_path, desired_cube_side=512, chunk_size=64, dask_local_dir='
     assert type(data_xr['e'].data) == dask.array.core.Array
 
     # Add an extra dimension to the data to match isotropic8192
-    data_xr = data_xr.expand_dims({'extra_dim': [1]})
+    expanded_ds = data_xr.expand_dims({'extra_dim': [1]})
     # The above adds the extra dimension to the start. Fix that - in the back
-    data_xr = data_xr.transpose('nnz', 'nny', 'nnx', 'extra_dim')
+    transposed_ds = expanded_ds.transpose('nnz', 'nny', 'nnx', 'extra_dim')
 
     # Group 3 velocity components together
     # Never use dask with remote location on this!!
-    merged_velocity = merge_velocities(data_xr, chunk_size_base=chunk_size)
+    merged_velocity = merge_velocities(transposed_ds, data_xr, chunk_size_base=chunk_size)
 
     # client.close()
 
@@ -157,7 +157,7 @@ def list_fileDB_folders():
     return [f'/home/idies/workspace/turb/data{str(d).zfill(2)}_{str(f).zfill(2)}/zarr/'  for f in range(1,4) for d in range(1,13)]
 
 
-def merge_velocities(data_xr, chunk_size_base=64):
+def merge_velocities(transposed_ds, data_xr, chunk_size_base=64):
     """
         Merge the 3 velocity components/directions - such merging exhibits faster 3-component reads. This is a Dask lazy computation
         
@@ -165,7 +165,7 @@ def merge_velocities(data_xr, chunk_size_base=64):
     """
 
     # Merge Velocities into 1
-    b = da.stack([data_xr['u'], data_xr['v'], data_xr['w']], axis=3)
+    b = da.stack([transposed_ds['u'], transposed_ds['v'], transposed_ds['w']], axis=3)
     b = b.squeeze() # It should be (2048, 2048, 2048, 3, 1) before this. Use (2048, 2048, 2048, 3)
     # Make into correct chunk sizes
     b = b.rechunk((chunk_size_base,chunk_size_base,chunk_size_base,3)) # Dask chooses (64,64,64,1)
