@@ -37,7 +37,7 @@ def prepare_data(xr_path, desired_cube_side=512, chunk_size=64, dask_local_dir='
 
     # Add an extra dimension to the data to match isotropic8192
     # Drop is there to drop the Coordinates object that is created - this creates a separate folder when to_zarr() is called
-    expanded_ds = data_xr.expand_dims({'extra_dim': [1]}).drop('extra_dim')
+    expanded_ds = data_xr.expand_dims({'extra_dim': [1]}).drop_vars('extra_dim')
     # The above adds the extra dimension to the start. Fix that - in the back
     transposed_ds = expanded_ds.transpose('nnz', 'nny', 'nnx', 'extra_dim')
 
