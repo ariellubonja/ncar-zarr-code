@@ -50,8 +50,8 @@ class VerifyWriteTest(unittest.TestCase):
         zarr_512 = zarr.open_group(zarr_512_path, mode='r')
         print("Testing data from ", zarr_512_path)
         for var in original_512.data_vars:
-            print(var)
             assert_eq(original_512[var].data, da.from_zarr(zarr_512[var]))
+            print(var, " OK")
 
 
     def verify_512_cube_dimensions(self, zarr_512_path):
