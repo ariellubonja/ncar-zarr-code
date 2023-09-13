@@ -2,7 +2,6 @@ import numpy as np
 import xarray as xr
 import os
 import dask.array as da
-from dask.distributed import Client
 import dask
 import math, queue
 from itertools import product
