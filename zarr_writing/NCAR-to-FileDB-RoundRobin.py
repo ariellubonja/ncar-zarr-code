@@ -1,8 +1,12 @@
-from utils import write_tools
 import argparse
 import dask
 from dask import delayed
 from dask.distributed import Client
+import sys, os
+
+sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+
+from utils import write_tools
 
 
 array_cube_side = 2048
