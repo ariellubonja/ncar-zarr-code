@@ -1143,6 +1143,7 @@ class iso_cube:
         # iterate over the data volumes that the database files are stored on.
         for database_file_disk in db_native_map:
             # read in the voxel data from all of the database files on this disk.
+            print('db path: ', db_native_map[database_file_disk])
             native_output_data += self.get_iso_points_variable(db_native_map[database_file_disk], verbose = False)
             
     def read_visitors_in_parallel_variable(self, db_visitor_map, visitor_output_data):

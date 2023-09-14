@@ -1,6 +1,7 @@
 import unittest
 import zarr
-import numpy as np
+from dask.array.utils import assert_eq
+import dask.array as da
 from utils import write_tools
 from utils.write_tools import flatten_3d_list
 import argparse, sys
@@ -27,7 +28,7 @@ class VerifyWriteTest(unittest.TestCase):
 
     def test_data_comparison(self):
         for original_512, zarr_512_path in self.queue:
-            with self.subTest(msg=f"Testing data from {zarr_512_path}"):
+            with self.subTest():
                 self.verify_512_cube_data(original_512, zarr_512_path)
 
     def test_dimensions(self):
@@ -47,8 +48,11 @@ class VerifyWriteTest(unittest.TestCase):
 
     def verify_512_cube_data(self, original_512, zarr_512_path):
         zarr_512 = zarr.open_group(zarr_512_path, mode='r')
+        print("Testing data from ", zarr_512_path)
         for var in original_512.data_vars:
-            np.testing.assert_array_equal(original_512[var].values, zarr_512[var][:])
+            assert_eq(original_512[var].data, da.from_zarr(zarr_512[var]))
+            print(var, " OK")
+
 
     def verify_512_cube_dimensions(self, zarr_512_path):
         zarr_512 = zarr.open_group(zarr_512_path, mode='r')

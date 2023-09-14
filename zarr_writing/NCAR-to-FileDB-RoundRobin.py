@@ -1,5 +1,8 @@
 from utils import write_tools
-import queue, threading, argparse
+import argparse
+import dask
+from dask import delayed
+from dask.distributed import Client
 
 
 array_cube_side = 2048
@@ -10,11 +13,11 @@ use_dask = True
 dest_folder_name = "sabl2048b" # B is the high-rate data
 write_type = "prod" # or "back" for backup
 
-n_dask_workers = 4 # For Dask rechunking
+n_dask_workers = 16 # For Dask rechunking
 
 # Kernel dies with Sciserver large jobs resources as of Aug 2023. Out of memory IMO
-num_threads = 34  # For writing to FileDB
-dask_local_dir = '/home/idies/workspace/turb/data02_02'
+# num_threads = 34  # For writing to FileDB
+# dask_local_dir = '/home/idies/workspace/turb/data02_02'
 
 
 encoding={
@@ -31,28 +34,15 @@ if __name__ == '__main__':
     args = parser.parse_args()
     timestep_nr = args.timestep
 
+    client = Client(n_workers=n_dask_workers)
+
     cubes, _ = write_tools.prepare_data(raw_ncar_folder_path + "/jhd." + str(timestep_nr).zfill(3) + ".nc")
     cubes = write_tools.flatten_3d_list(cubes)
-
-    q = queue.Queue()
-
     dests = write_tools.get_512_chunk_destinations(dest_folder_name, write_type, timestep_nr, array_cube_side)
 
-    # Populate the queue with Write to FileDB tasks
-    for i in range(len(dests)):
-        q.put((cubes[i], dests[i], encoding))
-    
+    tasks = [delayed(write_tools.write_to_disk)(cubes[i], dests[i], encoding) for i in range(len(dests))]
 
-    # Create threads and start them
-    threads = []
-    for _ in range(num_threads):
-        t = threading.Thread(target=write_tools.write_to_disk, args=(q,))
-        t.start()
-        threads.append(t)
+    # Compute all tasks in parallel
+    dask.compute(*tasks)
 
-    # Wait for all tasks to be processed
-    q.join()
-
-    # Wait for all threads to finish
-    for t in threads:
-        t.join()
+    client.close()

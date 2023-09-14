@@ -302,6 +302,10 @@ def dataValues(cube, x, y, z, output_data, axes_ranges, strides):
     endpoints_min = np.array([np.min(x), np.min(y), np.min(z)], dtype = np.int32)
     endpoints_max = np.array([np.max(x), np.max(y), np.max(z)], dtype = np.int32)
     
+    print('endpoints_min: ', endpoints_min)
+    print('endpoints_max: ', endpoints_max)
+    print('axes_ranges: ', axes_ranges)
+    
     # exception_handling.
     # -----
     # raise exception if all of the user requested datapoints are not inside the bounds of the user box volume.
