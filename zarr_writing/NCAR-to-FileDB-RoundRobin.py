@@ -40,6 +40,7 @@ if __name__ == '__main__':
     cubes, _ = write_tools.prepare_data(raw_ncar_folder_path + "/jhd." + str(timestep_nr).zfill(3) + ".nc")
     cubes = write_tools.flatten_3d_list(cubes)
 
+    # DON'T REPLACE THIS WITH DASK - DASK ISN'T AWARE OF THE MULTIPLE FILEDB DISKS
     q = queue.Queue()
 
     dests = write_tools.get_512_chunk_destinations(dest_folder_name, write_type, timestep_nr, array_cube_side)
