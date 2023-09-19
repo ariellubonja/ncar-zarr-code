@@ -28,7 +28,7 @@ def prepare_data(xr_path, desired_cube_side=512, chunk_size=64, dask_local_dir='
     Assuming we'll always use dask bcs. why not
     """
 
-    print("Started preparing NetCDF data for verification. This will take ~20min")
+    # print("Started preparing NetCDF data for verification. This will take ~20min")
     # client = Client(n_workers=n_dask_workers, local_directory=dask_local_dir)
     data_xr = xr.open_dataset(xr_path, chunks={'nnz': chunk_size, 'nny': chunk_size, 'nnx': chunk_size})
 

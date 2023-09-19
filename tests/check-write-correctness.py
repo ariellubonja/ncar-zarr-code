@@ -37,22 +37,22 @@ class VerifyWriteTest(unittest.TestCase):
 
     def test_dimensions(self):
         for _, zarr_512_path in self.queue:
-            with self.subTest(msg=f"Testing dimensions from {zarr_512_path}"):
+            with self.subTest():
                 self.verify_512_cube_dimensions(zarr_512_path)
 
     def test_chunk_sizes(self):
         for _, zarr_512_path in self.queue:
-            with self.subTest(msg=f"Testing chunk sizes from {zarr_512_path}"):
+            with self.subTest():
                 self.verify_512_cube_chunk_sizes(zarr_512_path)
 
     def test_compression(self):
         for _, zarr_512_path in self.queue:
-            with self.subTest(msg=f"Testing compression from {zarr_512_path}"):
+            with self.subTest():
                 self.verify_512_cube_compression(zarr_512_path)
 
     def verify_512_cube_data(self, original_512, zarr_512_path):
         zarr_512 = zarr.open_group(zarr_512_path, mode='r')
-        print("Testing data from ", zarr_512_path)
+        print("Comparing original 512^3 with ", zarr_512_path)
         for var in original_512.data_vars:
             assert_eq(original_512[var].data, da.from_zarr(zarr_512[var]))
             print(var, " OK")
@@ -63,6 +63,8 @@ class VerifyWriteTest(unittest.TestCase):
         for var in zarr_512.array_keys():
             expected_shape = (512, 512, 512, 3) if var == "velocity" else (512, 512, 512, 1)
             self.assertEqual(zarr_512[var].shape, expected_shape)
+        
+        print("Cube dimension = (512, 512, 512, x),  for all variables in ", zarr_512_path)
 
     def verify_512_cube_chunk_sizes(self, zarr_512_path):
         zarr_512 = zarr.open_group(zarr_512_path, mode='r')
@@ -70,10 +72,14 @@ class VerifyWriteTest(unittest.TestCase):
             expected_chunksize = (64, 64, 64, 3) if var == "velocity" else (64, 64, 64, 1)
             self.assertEqual(zarr_512[var].chunks, expected_chunksize)
 
+        print("Chunk sizes = (64, 64, 64, x),  for all variables in ", zarr_512_path)
+
     def verify_512_cube_compression(self, zarr_512_path):
         zarr_512 = zarr.open_group(zarr_512_path, mode='r')
         for var in zarr_512.array_keys():
             self.assertIsNone(zarr_512[var].compressor)
+        
+        print("Compression is None for all variables in ", zarr_512_path)
 
 
 if __name__ == '__main__':
