@@ -1,5 +1,7 @@
 import subprocess
 import os
+from concurrent.futures import ProcessPoolExecutor
+
 
 raw_ncar_folder_path = '/home/idies/workspace/turb/data02_02/ncar-high-rate-fixed-dt'
 
@@ -14,6 +16,16 @@ def get_sha256(filename):
     # Only get the hash, and append the original filename
     hash_value = result.stdout.decode().strip().split()[0]
     return f"{hash_value}  {filename}"
+
+
+def check_file(entry):
+    expected_hash, expected_filename = entry.split('  ', 1)
+    computed_entry = get_sha256(expected_filename)
+
+    if computed_entry == entry:
+        return (expected_filename, "PASSED", None, None)
+    else:
+        return (expected_filename, "FAILED", entry, computed_entry)
 
 
 def main():
@@ -66,14 +78,15 @@ def main():
         'de221711bb3b85f44db862d6cd0f842f61ba36e8b3064906527eeede36e4d22a  jhd.044.nc',
     ]
 
-    for entry in hardcoded_hashes:
-        expected_hash, expected_filename = entry.split('  ', 1)
-        computed_entry = get_sha256(expected_filename)
+    with ProcessPoolExecutor(max_workers=10) as executor:
+        results = list(executor.map(check_file, hardcoded_hashes))
 
-        if computed_entry == entry:
-            print(f"{expected_filename}: PASSED")
+    for filename, status, expected, computed in results:
+        if status == "PASSED":
+            print(f"{filename}: PASSED")
         else:
-            print(f"{expected_filename}: FAILED (Expected: {entry}, Got: {computed_entry})")
+            print(f"{filename}: FAILED (Expected: {expected}, Got: {computed})")
+
 
 
 if __name__ == "__main__":
