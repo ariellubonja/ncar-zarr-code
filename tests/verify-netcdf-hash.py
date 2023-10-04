@@ -1,6 +1,7 @@
 import subprocess
 import os
 from concurrent.futures import ProcessPoolExecutor
+import argparse
 
 
 raw_ncar_folder_path = '/home/idies/workspace/turb/data02_02/ncar-high-rate-fixed-dt'
@@ -28,7 +29,24 @@ def check_file(entry):
         return (expected_filename, "FAILED", entry, computed_entry)
 
 
+def parse_args():
+    """Parse command line arguments."""
+    parser = argparse.ArgumentParser(description='Process specific files.')
+    parser.add_argument('integers', metavar='N', type=int, nargs='+', 
+                        help='an integer for the file number or two integers for a range of files')
+    return parser.parse_args()
+
+
 def main():
+    args = parse_args()
+    if len(args.integers) == 1:
+        file_indices = [args.integers[0]]
+    elif len(args.integers) == 2:
+        file_indices = list(range(args.integers[0], args.integers[1] + 1))
+    else:
+        print("Please provide either one file index or two indices for a range.")
+        return
+    
     # Hardcoded list of SHA-256 hashes with filenames
     hardcoded_hashes = [
         'c29de1bc2538b1ce019b8d239d3b427bfbae60f581dde879b533d523e23a671f  jhd.000.nc',
@@ -78,8 +96,11 @@ def main():
         'de221711bb3b85f44db862d6cd0f842f61ba36e8b3064906527eeede36e4d22a  jhd.044.nc',
     ]
 
+    selected_hashes = [hardcoded_hashes[i] for i in file_indices if i < len(hardcoded_hashes)]
+
     with ProcessPoolExecutor(max_workers=10) as executor:
-        results = list(executor.map(check_file, hardcoded_hashes))
+            results = list(executor.map(check_file, selected_hashes))
+
 
     for filename, status, expected, computed in results:
         if status == "PASSED":
