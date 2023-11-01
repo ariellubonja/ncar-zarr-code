@@ -120,6 +120,7 @@ class iso_cube:
             # save self.cache to a pickled file.
             with open(pickle_file, 'wb') as pickled_filepath:
                 dill.dump(self.cache, pickled_filepath)
+        # print(self.cache) # Debugging chunk assignment
     
     def get_turb_folders(self):
         # specifies the folders on fileDB that should be searched for the primary copies of the zarr files.
