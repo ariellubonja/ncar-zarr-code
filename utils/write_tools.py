@@ -253,9 +253,11 @@ def get_512_chunk_destinations(dest_folder_name, write_type, timestep_nr, array_
 
             for k in range(4):
                 a = []
-                a.append([i * smaller_size, (i + 1) * smaller_size])
-                a.append([j * smaller_size, (j + 1) * smaller_size])
+
                 a.append([k * smaller_size, (k + 1) * smaller_size])
+                a.append([j * smaller_size, (j + 1) * smaller_size])
+                a.append([i * smaller_size, (i + 1) * smaller_size])
+
 
                 range_list.append(a)
 
