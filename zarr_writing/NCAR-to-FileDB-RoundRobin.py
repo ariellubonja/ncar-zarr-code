@@ -19,8 +19,8 @@ write_type = "prod" # or "back" for backup
 # n_dask_workers = 16 # For Dask rechunking
 
 # Kernel dies with Sciserver large jobs resources as of Aug 2023. Out of memory IMO
-num_threads = 34  # For writing to FileDB
-# dask_local_dir = '/home/idies/workspace/turb/data02_02'
+num_threads = 34  # Forwriting to FileDB
+dask_local_dir = '/home/idies/workspace/turb/data02_02'
 
 
 encoding={
@@ -37,6 +37,8 @@ if __name__ == '__main__':
     args = parser.parse_args()
     timestep_nr = args.timestep
 
+    client = Client(n_workers=n_dask_workers, local_directory=dask_local_dir)
+    
     cubes, _ = write_tools.prepare_data(raw_ncar_folder_path + "/jhd." + str(timestep_nr).zfill(3) + ".nc")
     cubes = write_tools.flatten_3d_list(cubes)
 
