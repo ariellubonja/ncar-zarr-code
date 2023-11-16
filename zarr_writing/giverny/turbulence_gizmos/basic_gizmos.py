@@ -29,7 +29,7 @@ def check_variable(variable, dataset_title):
 def check_timepoint(timepoint, dataset_title):
     # check that timepoint is a valid timepoint for the dataset.
     valid_timepoints = {'isotropic4096':range(1, 1 + 1), 'isotropic8192':range(1, 6 + 1),
-                        'sabl2048b':range(1, 6 + 1)}
+                        'sabl2048b':range(1, 44 + 1)}
     
     if timepoint not in valid_timepoints[dataset_title]:
         raise Exception(f'{timepoint} is not a valid timepoint: must be in the inclusive range of ' +
