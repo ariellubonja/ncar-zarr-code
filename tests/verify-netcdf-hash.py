@@ -32,8 +32,15 @@ def check_file(entry):
 def parse_args():
     """Parse command line arguments."""
     parser = argparse.ArgumentParser(description='Process specific files.')
+
+    # Existing argument for file numbers or range
     parser.add_argument('integers', metavar='N', type=int, nargs='+', 
                         help='an integer for the file number or two integers for a range of files')
+
+    # Optional argument for the file path
+    parser.add_argument('-p', '--path', type=str, default='.',
+                        help='optional path where the files are located, defaults to current directory')
+
     return parser.parse_args()
 
 
@@ -46,6 +53,11 @@ def main():
     else:
         print("Please provide either one file index or two indices for a range.")
         return
+
+    if args.path == '.':
+        pass # Use original filedb02-02 path defined at top of file
+    else:
+        raw_ncar_folder_path = args.path
     
     # Hardcoded list of SHA-256 hashes with filenames
     hardcoded_hashes = [
