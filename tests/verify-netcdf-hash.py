@@ -32,8 +32,15 @@ def check_file(entry):
 def parse_args():
     """Parse command line arguments."""
     parser = argparse.ArgumentParser(description='Process specific files.')
+
+    # Existing argument for file numbers or range
     parser.add_argument('integers', metavar='N', type=int, nargs='+', 
                         help='an integer for the file number or two integers for a range of files')
+
+    # Optional argument for the file path
+    parser.add_argument('-p', '--path', type=str, default='.',
+                        help='optional path where the files are located, defaults to current directory')
+
     return parser.parse_args()
 
 
@@ -46,6 +53,11 @@ def main():
     else:
         print("Please provide either one file index or two indices for a range.")
         return
+
+    if args.path == '.':
+        pass # Use original filedb02-02 path defined at top of file
+    else:
+        raw_ncar_folder_path = args.path
     
     # Hardcoded list of SHA-256 hashes with filenames
     hardcoded_hashes = [
@@ -98,7 +110,57 @@ def main():
 '1427c5900a3736aeee43532db8e635f31c09fdf287927c08ae1a974c02b74527  jhd.046.nc',
 '120cef29ad8ffb09fbf4e763d0f5c6fb80027faa8181d9f94d9533d7592160e8  jhd.047.nc',
 'b8ab895a9e82e80e387cb9ea11bcd5978763557c4316c0a67c8d2c61a950cd6a  jhd.048.nc',
-'e85f60ada6d0f17529798cdb5eb2d6e8dd482a3617efc19556785a60cbad44f5  jhd.049.nc'
+'e85f60ada6d0f17529798cdb5eb2d6e8dd482a3617efc19556785a60cbad44f5  jhd.049.nc',
+'82f28dd04b62410a4e6bed9d2179b08267e6aeecbd9104335bed1de210cf132b  jhd.050.nc',
+'556bac84c2d171cba836deafc4af421967c764a7d6972d2fffc1ae12c9cc475f  jhd.051.nc',
+'56bd3d297260ac7c94df707f39c967efc1d87564ebeb75406453db1ed28b6894  jhd.052.nc',
+'62a79a1e6ad28df90eaaea4305a324b1bc4d8bce0088471a7eaba814c38d19ad  jhd.053.nc',
+'00a1f63eaa10df31e3b41ce870908c4bf385a8f1e18b5665b101330bb04b4725  jhd.054.nc',
+'a2b36a3e5c430c21c849526f368321df7a29b1fb0327c0b0d66bbbc8ed0e9813  jhd.055.nc',
+'b15826e79dfb319a1e9708a901fbedf9a6c32d05a4a148ab22b42eac49b51ab9  jhd.056.nc',
+'16a4f208964292d0cf649fd6ac6e341f5ddab2030c1c4b9e5137df4ba7abeadb  jhd.057.nc',
+'898abf3db72bf05cdd1551f9d848c5af91eb1f5de6066d7db7060996a681638d  jhd.058.nc',
+'378ffe2aa77527a45c054fe4c2b15b919d005a9a39abac9cd37340ca61cf62b8  jhd.059.nc',
+'650a24ffa8cba7a5797a78a41923989011c3acd3395d27d223f5b6f1c3e23f6b  jhd.060.nc',
+'57286dca9cc72b01c2cfb354585af12185efe2457957af6cde4a0bdea0878703  jhd.061.nc',
+'6f3c1179e66be68aa4a9f139fdf8cd83fc297dd6ec76e8eb1d6ce2f4aab7592b  jhd.062.nc',
+'8fd432b736523e58598951354278b96e9ebc81ced5e3d734ef381b1ceba170d5  jhd.063.nc',
+'b54a6b524a2ec879599a044f832f96d41f450267e1a683100d120d5d5629b689  jhd.064.nc',
+'5185e823265e6a17a1e4d79e978149ded8f18e94bd62e86edb6a8803960932e7  jhd.065.nc',
+'502ce99e3f129ca1d515dac0ee9b7f2ee5195bf301340f70473efc7c7bdd0901  jhd.066.nc',
+'f8a105734441176956f4de759932216fc45c6906ab361313398ea8c8629d0c3d  jhd.067.nc',
+'676f56da1b8c082f58f838505562959a0931988825df72730c3797cdd504f7a9  jhd.068.nc',
+'23ef86b7e49a4e4ddac7379099c8d61167b3acc3ee82c25661a42fb28cf0ff64  jhd.069.nc',
+'478d973bca0764f0de3c29b9e45e955560a534d73f5e50c55a7935294ce35b12  jhd.070.nc',
+'2948776700d3c8d2ca17b8ee03057ce04568432536ee389f8096e8536b2082c6  jhd.071.nc',
+'8518624943ae6f8b375120d3e7897a60a633f9bfc2e2e9f4142a615b44556e99  jhd.072.nc',
+'17f5e2b48c2d9013c460710b983c95312115f529760e16db5afae40efcdac419  jhd.073.nc',
+'734a644c3ec9c575908285083d01d093862d7161f14d8be2a3161ab8c41c9b38  jhd.074.nc',
+'844ad0fb2afb6b8fd5e2f8f3b961031bcc6b0d788354c5677a35273fee5933b8  jhd.075.nc',
+'a46c217dab3b9619cf8cbba2b8f56540ffe7c4d52ebec5f356ef31b2cd29b913  jhd.076.nc',
+'a87ba56c070b9af369cc69ea153330162c9922c4e48c997335f5be197a57c36a  jhd.077.nc',
+'3d2dfe52dbee6a26d1310e11739dad1f39ea7b1a28a22650e12c1991f959b93c  jhd.078.nc',
+'5a9d9735c99c954f9a1c1871a85f8a8baa2d660cdb8828a5a7e9a1e32c4fea11  jhd.079.nc',
+'a8410477527aecd23ded73098b01908b1931326c0565c39d7f64c243649ea283  jhd.080.nc',
+'7d5aeebaec916eb60b4cbe78f294808a455da069cfcc5f3020ac427448fd3392  jhd.081.nc',
+'602770398a71def644121643b4cea95fb356c71fbcb4757fb0d4988a24b73869  jhd.082.nc',
+'9c8b999cd0a3c7078fe628adc267878bd5f366cbb4343d24764dd0f091eb5abe  jhd.083.nc',
+'ddc3d2a08620ac2a96d6efb45a1c26b7ce0d450f10d040a4739c9b35b88262f8  jhd.084.nc',
+'c3c533cd28ef32c7b2942d697dffd677086bc9066af997b7bd25c4d7f7a172b4  jhd.085.nc',
+'a01178046ffb6306faa3be925d2307913c154c9e7762ad9d8e949dc8d03b4cbd  jhd.086.nc',
+'1941f761344febee09989a9a82b93bc04a662ab734c7de421140a585fc1115d5  jhd.087.nc',
+'06246ec2693e08d72f7b66f0f6a83ce63c50cb97fe10ad82a866d34b06130407  jhd.088.nc',
+'51af6c9c1d0677b07940e0b263486ebb09a240c9d68ab5be807c7cddc436533d  jhd.089.nc',
+'b15403798a1443c90f02606d0ce2eca5e51d7587a95af21adcf130d6d424c8a1  jhd.090.nc',
+'ebad604362267da62df5da2fde6915f49b91b6ba728f6bc2ebd158d01bda005e  jhd.091.nc',
+'8aa9305de89b7a50ed6661e6c056b85bad3bc99fa7dcf331899697a7b80fbddd  jhd.092.nc',
+'0285200b9d44a5c51979c579feaf44bf662271c2ee4d4a142ce7619b44e13522  jhd.093.nc',
+'bf5ebf4b7e76ded188845ac1aced025a1e8e126e324ecc0d954c5efe413cc2d9  jhd.094.nc',
+'325acc57abe935caf5ea896323b3ac710144244b77137fcc4a43f1f59a14b5d7  jhd.095.nc',
+'aa093c6d4225c802919313eae6c120a8666c58574c995391d4218082d7edb288  jhd.096.nc',
+'8276e153d02ecbde058fe751c16b0731ef9ec028e186bf292cbd1b086f1f7468  jhd.097.nc',
+'f926439343afd82e12939850c52e0f981c018566177d47ad19d7f821da9b7fd7  jhd.098.nc',
+'8daf348f951559ac5de55a3c2daa08550e2bad657e24960b170004bfd2b938dc  jhd.099.nc',
     ]
 
     selected_hashes = [hardcoded_hashes[i] for i in file_indices if i < len(hardcoded_hashes)]
