@@ -4,10 +4,8 @@ from concurrent.futures import ProcessPoolExecutor
 import argparse
 
 
-raw_ncar_folder_path = '/home/idies/workspace/turb/data02_02/ncar-high-rate-fixed-dt'
 
-
-def get_sha256(filename):
+def get_sha256(filename, raw_ncar_folder_path):
     """
     Return the SHA-256 hash and filename in the format 'hash filename'.
     """
@@ -19,9 +17,9 @@ def get_sha256(filename):
     return f"{hash_value}  {filename}"
 
 
-def check_file(entry):
+def check_file(entry, raw_ncar_folder_path):
     expected_hash, expected_filename = entry.split('  ', 1)
-    computed_entry = get_sha256(expected_filename)
+    computed_entry = get_sha256(expected_filename, raw_ncar_folder_path)
 
     if computed_entry == entry:
         return (expected_filename, "PASSED", None, None)
@@ -55,7 +53,7 @@ def main():
         return
 
     if args.path == '.':
-        pass # Use original filedb02-02 path defined at top of file
+        raw_ncar_folder_path = '/home/idies/workspace/turb/data02_02/ncar-high-rate-fixed-dt'
     else:
         raw_ncar_folder_path = args.path
     
@@ -166,7 +164,7 @@ def main():
     selected_hashes = [hardcoded_hashes[i] for i in file_indices if i < len(hardcoded_hashes)]
 
     with ProcessPoolExecutor(max_workers=10) as executor:
-            results = list(executor.map(check_file, selected_hashes))
+            results = list(executor.map(check_file, selected_hashes, raw_ncar_folder_path))
 
 
     for filename, status, expected, computed in results:
