@@ -4,12 +4,15 @@ from concurrent.futures import ProcessPoolExecutor
 import argparse
 
 
-
-def get_sha256(filename, raw_ncar_folder_path):
+def get_sha256(filename):
     """
     Return the SHA-256 hash and filename in the format 'hash filename'.
     """
+    raw_ncar_folder_path = get_ncar_folder_address()
+    
     full_path = os.path.join(raw_ncar_folder_path, filename)
+    # print("NCAR passed argument path: ", raw_ncar_folder_path)
+
     cmd = ["sha256sum", full_path]
     result = subprocess.run(cmd, stdout=subprocess.PIPE)
     # Only get the hash, and append the original filename
@@ -17,9 +20,16 @@ def get_sha256(filename, raw_ncar_folder_path):
     return f"{hash_value}  {filename}"
 
 
-def check_file(entry, raw_ncar_folder_path):
+def get_ncar_folder_address():
+    args = parse_args()
+    raw_ncar_folder_path = args.path
+    return raw_ncar_folder_path
+
+
+def check_file(entry):
     expected_hash, expected_filename = entry.split('  ', 1)
-    computed_entry = get_sha256(expected_filename, raw_ncar_folder_path)
+    # print("Parsed filename: ", expected_filename)
+    computed_entry = get_sha256(expected_filename)
 
     if computed_entry == entry:
         return (expected_filename, "PASSED", None, None)
@@ -36,8 +46,8 @@ def parse_args():
                         help='an integer for the file number or two integers for a range of files')
 
     # Optional argument for the file path
-    parser.add_argument('-p', '--path', type=str, default='.',
-                        help='optional path where the files are located, defaults to current directory')
+    parser.add_argument('-p', '--path', type=str, 
+                        help='path to where the NCAR .netcdf files are located')
 
     return parser.parse_args()
 
@@ -51,11 +61,7 @@ def main():
     else:
         print("Please provide either one file index or two indices for a range.")
         return
-
-    if args.path == '.':
-        raw_ncar_folder_path = '/home/idies/workspace/turb/data02_02/ncar-high-rate-fixed-dt'
-    else:
-        raw_ncar_folder_path = args.path
+    
     
     # Hardcoded list of SHA-256 hashes with filenames
     hardcoded_hashes = [
@@ -164,7 +170,8 @@ def main():
     selected_hashes = [hardcoded_hashes[i] for i in file_indices if i < len(hardcoded_hashes)]
 
     with ProcessPoolExecutor(max_workers=10) as executor:
-            results = list(executor.map(check_file, selected_hashes, raw_ncar_folder_path))
+        results = list(executor.map(check_file, selected_hashes))
+
 
 
     for filename, status, expected, computed in results:
