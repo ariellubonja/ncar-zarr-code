@@ -43,9 +43,9 @@ def parse_args():
 
     # Existing argument for file numbers or range
     parser.add_argument('integers', metavar='N', type=int, nargs='+', 
-                        help='an integer for the file number or two integers for a range of files')
+                        help='an integer for the file number or two integers for a range of files',
+                        required=True)
 
-    # Optional argument for the file path
     parser.add_argument('-p', '--path', type=str, 
                         help='path to where the NCAR .netcdf files are located')
 

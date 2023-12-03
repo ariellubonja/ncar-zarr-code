@@ -11,7 +11,6 @@ from utils import write_tools
 array_cube_side = 2048
 desired_cube_side = 512
 chunk_size = 64
-raw_ncar_folder_path = '/home/idies/workspace/turb/data02_02/ncar-high-rate-fixed-dt'
 use_dask = True
 dest_folder_name = "sabl2048b" # B is the high-rate data
 write_type = "prod" # or "back" for backup
@@ -34,8 +33,11 @@ encoding={
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--timestep', type=int, required=True)
+    parser.add_argument('-p', '--path', type=str, 
+                    help='path to where the NCAR .netcdf files are located', required=True)
     args = parser.parse_args()
     timestep_nr = args.timestep
+    raw_ncar_folder_path = args.path
 
     client = Client(n_workers=n_dask_workers, local_directory=dask_local_dir)
     
