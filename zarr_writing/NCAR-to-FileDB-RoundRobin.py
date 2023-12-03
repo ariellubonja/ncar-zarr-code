@@ -2,6 +2,7 @@ import argparse
 import sys, os
 import queue
 import threading
+from distributed import Client
 
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
