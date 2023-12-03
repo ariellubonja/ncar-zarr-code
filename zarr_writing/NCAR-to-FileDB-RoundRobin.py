@@ -40,7 +40,7 @@ if __name__ == '__main__':
     timestep_nr = args.timestep
     raw_ncar_folder_path = args.path
 
-    client = Client(n_workers=n_dask_workers, local_directory=dask_local_dir)
+    client = Client(local_directory=dask_local_dir)#, n_workers=n_dask_workers)
     
     cubes, _ = write_tools.prepare_data(raw_ncar_folder_path + "/jhd." + str(timestep_nr).zfill(3) + ".nc")
     cubes = write_tools.flatten_3d_list(cubes)
@@ -65,3 +65,5 @@ if __name__ == '__main__':
 
     for t in threads: # Wait for all threads to finish
         t.join()
+
+    client.close()
