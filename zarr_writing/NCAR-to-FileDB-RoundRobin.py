@@ -39,6 +39,8 @@ if __name__ == '__main__':
     args = parser.parse_args()
     timestep_nr = args.timestep
     raw_ncar_folder_path = args.path
+    parts = raw_ncar_folder_path.split('/')
+    dask_local_dir = '/'.join(parts[:-1])
 
     client = Client(local_directory=dask_local_dir)#, n_workers=n_dask_workers)
     
