@@ -2,7 +2,7 @@ import argparse
 import sys, os
 import queue
 import threading
-from distributed import Client
+# from distributed import Client
 
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 
@@ -20,7 +20,6 @@ write_type = "prod" # or "back" for backup
 
 # Kernel dies with Sciserver large jobs resources as of Aug 2023. Out of memory IMO
 num_threads = 34  # Forwriting to FileDB
-dask_local_dir = '/home/idies/workspace/turb/data02_02'
 
 
 encoding={
@@ -40,9 +39,9 @@ if __name__ == '__main__':
     timestep_nr = args.timestep
     raw_ncar_folder_path = args.path
     parts = raw_ncar_folder_path.split('/')
-    dask_local_dir = '/'.join(parts[:-1])
+    # dask_local_dir = '/'.join(parts[:-1])
 
-    client = Client(local_directory=dask_local_dir)#, n_workers=n_dask_workers)
+    # client = Client(local_directory=dask_local_dir)#, n_workers=n_dask_workers)
     
     cubes, _ = write_tools.prepare_data(raw_ncar_folder_path + "/jhd." + str(timestep_nr).zfill(3) + ".nc")
     cubes = write_tools.flatten_3d_list(cubes)
@@ -68,4 +67,4 @@ if __name__ == '__main__':
     for t in threads: # Wait for all threads to finish
         t.join()
 
-    client.close()
+    # client.close()
