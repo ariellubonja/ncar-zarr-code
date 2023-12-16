@@ -80,7 +80,3 @@ class VerifyWriteTest:
             assert zarr_512[var].compressor is None
 
         print("Compression is None for all variables in ", zarr_512_path)
-
-
-def pytest_addoption(parser):
-    parser.addoption("--timestep", action="store", type=int, required=True)
