@@ -11,7 +11,8 @@ from utils import write_tools
 from utils.write_tools import flatten_3d_list
 
 array_cube_side = 2048
-raw_ncar_folder_path = '/home/idies/workspace/turb/data02_02/ncar-high-rate-fixed-dt'
+raw_ncar_folder_path_02 = '/home/idies/workspace/turb/data02_02/ncar-high-rate-fixed-dt'
+raw_ncar_folder_path_03 = '/home/idies/workspace/turb/data02_03/ncar-high-rate-fixed-dt'
 # raw_ncar_folder_path = '/sciserver/filedb02-03/turb/ncar-high-rate-fixed-dt/'
 dest_folder_name = "sabl2048b"  # B is the high-rate data
 write_type = "prod"  # or "back" for backup
@@ -74,6 +75,11 @@ class TestVerifyWrite:
 
 # Helper function to set up data
 def setup_data(timestep_nr):
+    if timestep_nr < 49:
+        raw_ncar_folder_path = raw_ncar_folder_path_02
+    else:
+        raw_ncar_folder_path = raw_ncar_folder_path_03
+
     cubes, _ = write_tools.prepare_data(raw_ncar_folder_path + "/jhd." + str(timestep_nr).zfill(3) + ".nc")
     cubes = flatten_3d_list(cubes)
     dests = write_tools.get_512_chunk_destinations(dest_folder_name, write_type, timestep_nr, array_cube_side)
