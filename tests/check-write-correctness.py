@@ -11,7 +11,8 @@ from utils.write_tools import flatten_3d_list
 
 
 array_cube_side = 2048
-raw_ncar_folder_path = '/home/idies/workspace/turb/data02_02/ncar-high-rate-fixed-dt'
+raw_ncar_folder_path_02_02 = '/home/idies/workspace/turb/data02_02/ncar-high-rate-fixed-dt'
+raw_ncar_folder_path_02_03 = '/home/idies/workspace/turb/data02_03/ncar-high-rate-fixed-dt'
 dest_folder_name = "sabl2048b"  # B is the high-rate data
 write_type = "prod"  # or "back" for backup
 
@@ -20,6 +21,8 @@ class VerifyWriteTest(unittest.TestCase):
 
     def setUp(self):
         timestep_nr = args.timestep
+        raw_ncar_folder_path = args.ncar_path
+
         self.queue = []
 
         cubes, _ = write_tools.prepare_data(raw_ncar_folder_path + "/jhd." + str(timestep_nr).zfill(3) + ".nc")
@@ -84,7 +87,8 @@ class VerifyWriteTest(unittest.TestCase):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--timestep', type=int, required=True)
+    parser.add_argument('--timestep', type=int, required=True, help='NCAR Timestep nr. to process')
+    parser.add_argument('--ncar_path', type=str, required=True, choices=['data02_02', 'data02_03'], help='FileDB folder where NCAR data is located. as of Dec-2023, this is either data02_02 or data02_03')
     args = parser.parse_args()
 
     unittest.main(argv=[sys.argv[0]])
