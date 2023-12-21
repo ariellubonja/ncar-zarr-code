@@ -11,8 +11,10 @@ from utils.write_tools import flatten_3d_list
 
 
 array_cube_side = 2048
-raw_ncar_folder_path_02_02 = '/home/idies/workspace/turb/data02_02/ncar-high-rate-fixed-dt'
-raw_ncar_folder_path_02_03 = '/home/idies/workspace/turb/data02_03/ncar-high-rate-fixed-dt'
+raw_ncar_folder_paths = {
+    'data02_02': '/home/idies/workspace/turb/data02_02/ncar-high-rate-fixed-dt',
+    'data02_03': '/home/idies/workspace/turb/data02_03/ncar-high-rate-fixed-dt',
+}
 dest_folder_name = "sabl2048b"  # B is the high-rate data
 write_type = "prod"  # or "back" for backup
 
@@ -21,7 +23,8 @@ class VerifyWriteTest(unittest.TestCase):
 
     def setUp(self):
         timestep_nr = args.timestep
-        raw_ncar_folder_path = args.ncar_path
+        ncar_path = args.ncar_path
+        raw_ncar_folder_path = raw_ncar_folder_paths.get(ncar_path)
 
         self.queue = []
 
