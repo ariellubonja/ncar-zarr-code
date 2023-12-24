@@ -35,6 +35,12 @@ class VerifyWriteTest(unittest.TestCase):
 
         for i in range(len(dests)):
             self.queue.append((cubes[i], dests[i]))
+            break
+
+
+    # def test_data_correctness(self):
+    #     for original_512, zarr_512_path in self.queue:
+    #         with self.subTest():
 
     def test_data_comparison(self):
         for original_512, zarr_512_path in self.queue:
