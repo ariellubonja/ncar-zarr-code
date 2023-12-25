@@ -17,15 +17,18 @@ raw_ncar_folder_paths = [
 
 
 class VerifyZarrDataCorrectness(unittest.TestCase):
-    array_cube_side = 2048
-    dest_folder_name = "sabl2048b"  # B is the high-rate data
-    write_type = "prod"  # or "back" for backup
 
-    def setUp(self):
+    @classmethod
+    def setUp(cls):
         """
             NetCDF data is sharded into smaller chunks, which are distributed round-robin.
             This method gathers these shards' paths and adds them to queue to compare their data with the original.
         """
+
+        cls.array_cube_side = 2048
+        cls.dest_folder_name = "sabl2048b"  # B is the high-rate data
+        cls.write_type = "prod"  # or "back" for backup
+
         # Read environment variables
         timestep_nr = int(os.environ.get('TIMESTEP_NR', 0))
         if timestep_nr < 50:
@@ -33,16 +36,16 @@ class VerifyZarrDataCorrectness(unittest.TestCase):
         else:
             raw_ncar_folder_path = raw_ncar_folder_paths[1]
 
-        self.queue = []
+        cls.queue = []
 
         file_path = os.path.join(raw_ncar_folder_path, f"jhd.{str(timestep_nr).zfill(3)}.nc")
         cubes, _ = write_tools.prepare_data(file_path)
         cubes = flatten_3d_list(cubes)
 
-        dests = write_tools.get_512_chunk_destinations(self.dest_folder_name, self.write_type, timestep_nr, self.array_cube_side)
+        dests = write_tools.get_512_chunk_destinations(cls.dest_folder_name, cls.write_type, timestep_nr, cls.array_cube_side)
 
         for i in range(len(dests)):
-            self.queue.append((cubes[i], dests[i]))
+            cls.queue.append((cubes[i], dests[i]))
 
 
     # def verify_512_cube_data(self, original_512, zarr_512_path):
