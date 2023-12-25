@@ -17,6 +17,12 @@ finally:
     import morton
 
 
+raw_ncar_folder_paths = [
+    '/home/idies/workspace/turb/data02_02/ncar-high-rate-fixed-dt',
+    '/home/idies/workspace/turb/data02_03/ncar-high-rate-fixed-dt',
+]
+
+
 def prepare_data(xr_path, desired_cube_side=512, chunk_size=64, dask_local_dir='/home/idies/workspace/turb/data02_02', n_dask_workers=4): # use_dask=True
     """
     Prepare data for writing to FileDB. This includes:
@@ -305,3 +311,31 @@ def write_to_disk(q):
             break
         finally:
             q.task_done()
+
+
+def get_sharding_queue():
+    """
+    NetCDF data is sharded into smaller chunks, which are distributed round-robin.
+    This method gathers these shards' paths and adds them to queue to compare their data with the original.
+    """
+    queue = []
+    array_cube_side = 2048
+    dest_folder_name = "sabl2048b"
+    write_type = "prod"
+
+    timestep_nr = int(os.environ.get('TIMESTEP_NR'))
+    if timestep_nr < 50:
+        raw_ncar_folder_path = raw_ncar_folder_paths[0]
+    else:
+        raw_ncar_folder_path = raw_ncar_folder_paths[1]
+
+    file_path = os.path.join(raw_ncar_folder_path, f"jhd.{str(timestep_nr).zfill(3)}.nc")
+    cubes, _ = prepare_data(file_path)
+    cubes = flatten_3d_list(cubes)
+
+    dests = get_512_chunk_destinations(dest_folder_name, write_type, timestep_nr, array_cube_side)
+
+    for i in range(len(dests)):
+        queue.append((cubes[i], dests[i]))
+
+    return queue

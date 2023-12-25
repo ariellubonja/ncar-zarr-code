@@ -5,39 +5,32 @@ import os
 
 from utils import write_tools
 from utils.write_tools import flatten_3d_list
+from utils.read_utils import extract_netcdf_timestep
 
+
+# TODO Fix this, use parameterize to generate tests for each item in the queue
 class VerifyZarrAttributes(unittest.TestCase):
+    """
+        Verify that the Zarr attributes are as expected. These include:
+        - Cube dimensions. Should be (512, 512, 512, 3) for velocity, (512, 512, 512, 1) otherwise
+        - Chunk sizes. Should be (64, 64, 64, 3) for velocity, (64, 64, 64, 1) otherwise
+        - Compression. Should be None
+    """
 
     @classmethod
     def setUpClass(cls):
-        cls.array_cube_side = 2048
-        cls.dest_folder_name = "sabl2048b"  # B is the high-rate data
-        cls.write_type = "prod"  # or "back" for backup
-
-        cls.raw_ncar_folder_paths = [
-            '/home/idies/workspace/turb/data02_02/ncar-high-rate-fixed-dt',
-            '/home/idies/workspace/turb/data02_03/ncar-high-rate-fixed-dt',
-        ]
-        cls.timestep_files = []
-
         # Preparing a list of all timestep files to test
         cls.timestep_files = []
-        for folder in cls.raw_ncar_folder_paths:
+        for folder in write_tools.raw_ncar_folder_paths:
             cls.timestep_files.extend(glob.glob(f"{folder}/jhd.*.nc"))
+
 
     def test_all_timesteps(self):
         for file_path in self.timestep_files:
-            timestep_nr = self.extract_timestep(file_path)
+            timestep_nr = extract_netcdf_timestep(file_path)
             with self.subTest(timestep=timestep_nr):
                 self.run_tests_for_single_file(file_path, timestep_nr)
 
-    def extract_timestep(self, file_path):
-        # Extract the filename from the full file path
-        filename = os.path.basename(file_path)
-        # Split the filename and extract the part with the timestep number
-        timestep_part = filename.split('.')[1]
-        # Convert the extracted part to an integer
-        return int(timestep_part)
 
     def run_tests_for_single_file(self, file_path, timestep_nr):
         cubes, _ = write_tools.prepare_data(file_path)
@@ -60,12 +53,14 @@ class VerifyZarrAttributes(unittest.TestCase):
 
         print("Cube dimension = (512, 512, 512, x),  for all variables in ", zarr_512_path)
 
+
     def verify_512_cube_chunk_sizes(self, zarr_512, zarr_512_path):
         for var in zarr_512.array_keys():
             expected_chunksize = (64, 64, 64, 3) if var == "velocity" else (64, 64, 64, 1)
             self.assertEqual(zarr_512[var].chunks, expected_chunksize)
 
         print("Chunk sizes = (64, 64, 64, x),  for all variables in ", zarr_512_path)
+
 
     def verify_512_cube_compression(self, zarr_512, zarr_512_path):
         for var in zarr_512.array_keys():
