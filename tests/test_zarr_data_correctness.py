@@ -24,7 +24,7 @@ def create_queue():
     dest_folder_name = "sabl2048b"
     write_type = "prod"
 
-    timestep_nr = int(os.environ.get('TIMESTEP_NR', 0))
+    timestep_nr = int(os.environ.get('TIMESTEP_NR'))
     if timestep_nr < 50:
         raw_ncar_folder_path = raw_ncar_folder_paths[0]
     else:
