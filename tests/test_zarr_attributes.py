@@ -46,30 +46,29 @@ class VerifyWriteTest(unittest.TestCase):
         dests = write_tools.get_512_chunk_destinations(self.dest_folder_name, self.write_type, timestep_nr, self.array_cube_side)
 
         for original_512, zarr_512_path in zip(cubes, dests):
-            self.verify_512_cube_dimensions(zarr_512_path)
-            self.verify_512_cube_chunk_sizes(zarr_512_path)
-            self.verify_512_cube_compression(zarr_512_path)
+            zarr_512 = zarr.open_group(zarr_512_path, mode='r')
+
+            self.verify_512_cube_dimensions(zarr_512)
+            self.verify_512_cube_chunk_sizes(zarr_512)
+            self.verify_512_cube_compression(zarr_512)
 
 
-    def verify_512_cube_dimensions(self, zarr_512_path):
-        zarr_512 = zarr.open_group(zarr_512_path, mode='r')
+    def verify_512_cube_dimensions(self, zarr_512):
         for var in zarr_512.array_keys():
             expected_shape = (512, 512, 512, 3) if var == "velocity" else (512, 512, 512, 1)
             self.assertEqual(zarr_512[var].shape, expected_shape)
 
-        print("Cube dimension = (512, 512, 512, x),  for all variables in ", zarr_512_path)
+        print("Cube dimension = (512, 512, 512, x),  for all variables in ", zarr_512.path)
 
-    def verify_512_cube_chunk_sizes(self, zarr_512_path):
-        zarr_512 = zarr.open_group(zarr_512_path, mode='r')
+    def verify_512_cube_chunk_sizes(self, zarr_512):
         for var in zarr_512.array_keys():
             expected_chunksize = (64, 64, 64, 3) if var == "velocity" else (64, 64, 64, 1)
             self.assertEqual(zarr_512[var].chunks, expected_chunksize)
 
-        print("Chunk sizes = (64, 64, 64, x),  for all variables in ", zarr_512_path)
+        print("Chunk sizes = (64, 64, 64, x),  for all variables in ", zarr_512.path)
 
-    def verify_512_cube_compression(self, zarr_512_path):
-        zarr_512 = zarr.open_group(zarr_512_path, mode='r')
+    def verify_512_cube_compression(self, zarr_512):
         for var in zarr_512.array_keys():
             self.assertIsNone(zarr_512[var].compressor)
 
-        print("Compression is None for all variables in ", zarr_512_path)
+        print("Compression is None for all variables in ", zarr_512.path)
