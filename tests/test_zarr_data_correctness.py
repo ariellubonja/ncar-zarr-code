@@ -18,16 +18,17 @@ raw_ncar_folder_paths = [
 
 class VerifyZarrDataCorrectness(unittest.TestCase):
 
+    array_cube_side = 2048
+    dest_folder_name = "sabl2048b"  # B is the high-rate data
+    write_type = "prod"  # or "back" for backup
+    queue = []  # Define queue as a class variable
+
     @classmethod
     def setUp(cls):
         """
             NetCDF data is sharded into smaller chunks, which are distributed round-robin.
             This method gathers these shards' paths and adds them to queue to compare their data with the original.
         """
-
-        cls.array_cube_side = 2048
-        cls.dest_folder_name = "sabl2048b"  # B is the high-rate data
-        cls.write_type = "prod"  # or "back" for backup
 
         # Read environment variables
         timestep_nr = int(os.environ.get('TIMESTEP_NR', 0))
@@ -46,14 +47,6 @@ class VerifyZarrDataCorrectness(unittest.TestCase):
 
         for i in range(len(dests)):
             cls.queue.append((cubes[i], dests[i]))
-
-
-    # def verify_512_cube_data(self, original_512, zarr_512_path):
-    #     zarr_512 = zarr.open_group(zarr_512_path, mode='r')
-    #     print("Comparing original 512^3 with ", zarr_512_path)
-    #     for var in original_512.data_vars:
-    #         assert_eq(original_512[var].data, da.from_zarr(zarr_512[var]))
-    #         print(var, " OK")
 
 
     @parameterized.expand(queue)  # Use the parameterized decorator
