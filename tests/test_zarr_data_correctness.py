@@ -2,9 +2,7 @@ import unittest
 import zarr
 from dask.array.utils import assert_eq
 import dask.array as da
-import argparse, sys, os
-
-sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
+import os
 
 from utils import write_tools
 from utils.write_tools import flatten_3d_list
