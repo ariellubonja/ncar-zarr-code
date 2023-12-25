@@ -6,7 +6,7 @@ import os
 from utils import write_tools
 from utils.write_tools import flatten_3d_list
 
-class VerifyWriteTest(unittest.TestCase):
+class VerifyZarrAttributes(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
