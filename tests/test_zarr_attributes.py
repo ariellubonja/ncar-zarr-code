@@ -48,27 +48,27 @@ class VerifyWriteTest(unittest.TestCase):
         for original_512, zarr_512_path in zip(cubes, dests):
             zarr_512 = zarr.open_group(zarr_512_path, mode='r')
 
-            self.verify_512_cube_dimensions(zarr_512)
-            self.verify_512_cube_chunk_sizes(zarr_512)
-            self.verify_512_cube_compression(zarr_512)
+            self.verify_512_cube_dimensions(zarr_512, zarr_512_path)
+            self.verify_512_cube_chunk_sizes(zarr_512, zarr_512_path)
+            self.verify_512_cube_compression(zarr_512, zarr_512_path)
 
 
-    def verify_512_cube_dimensions(self, zarr_512):
+    def verify_512_cube_dimensions(self, zarr_512, zarr_512_path):
         for var in zarr_512.array_keys():
             expected_shape = (512, 512, 512, 3) if var == "velocity" else (512, 512, 512, 1)
             self.assertEqual(zarr_512[var].shape, expected_shape)
 
-        print("Cube dimension = (512, 512, 512, x),  for all variables in ", zarr_512.path)
+        print("Cube dimension = (512, 512, 512, x),  for all variables in ", zarr_512_path)
 
-    def verify_512_cube_chunk_sizes(self, zarr_512):
+    def verify_512_cube_chunk_sizes(self, zarr_512, zarr_512_path):
         for var in zarr_512.array_keys():
             expected_chunksize = (64, 64, 64, 3) if var == "velocity" else (64, 64, 64, 1)
             self.assertEqual(zarr_512[var].chunks, expected_chunksize)
 
-        print("Chunk sizes = (64, 64, 64, x),  for all variables in ", zarr_512.path)
+        print("Chunk sizes = (64, 64, 64, x),  for all variables in ", zarr_512_path)
 
-    def verify_512_cube_compression(self, zarr_512):
+    def verify_512_cube_compression(self, zarr_512, zarr_512_path):
         for var in zarr_512.array_keys():
             self.assertIsNone(zarr_512[var].compressor)
 
-        print("Compression is None for all variables in ", zarr_512.path)
+        print("Compression is None for all variables in ", zarr_512_path)
