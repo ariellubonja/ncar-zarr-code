@@ -23,48 +23,6 @@ raw_ncar_folder_paths = [
 ]
 
 
-def prepare_data(xr_path, desired_cube_side=512, chunk_size=64, dask_local_dir='/home/idies/workspace/turb/data02_02', n_dask_workers=4): # use_dask=True
-    """
-    Prepare data for writing to FileDB. This includes:
-        - Merging velocity components
-        - Splitting into smaller chunks (64^3)
-        - Unabbreviating variable names
-        - Splitting 2048^3 arrays into 512^3 chunks
-    
-    Assuming we'll always use dask bcs. why not
-    """
-
-    # print("Started preparing NetCDF data for verification. This will take ~20min")
-    # client = Client(n_workers=n_dask_workers, local_directory=dask_local_dir)
-    data_xr = xr.open_dataset(xr_path, chunks={'nnz': chunk_size, 'nny': chunk_size, 'nnx': chunk_size})
-
-    assert type(data_xr['e'].data) == dask.array.core.Array
-
-    # Add an extra dimension to the data to match isotropic8192
-    # Drop is there to drop the Coordinates object that is created - this creates a separate folder when to_zarr() is called
-    expanded_ds = data_xr.expand_dims({'extra_dim': [1]}).drop_vars('extra_dim')
-    # The above adds the extra dimension to the start. Fix that - in the back
-    transposed_ds = expanded_ds.transpose('nnz', 'nny', 'nnx', 'extra_dim')
-
-    # Group 3 velocity components together
-    # Never use dask with remote location on this!!
-    merged_velocity = merge_velocities(transposed_ds, chunk_size_base=chunk_size)
-
-    # client.close()
-
-    merged_velocity = merged_velocity.rename({'e': 'energy', 't': 'temperature', 'p': 'pressure'})
-
-    dims = [dim for dim in data_xr.dims]
-    dims.reverse() # use (nnz, nny, nnx) instead of (nnx, nny, nnz)
-
-    # Split 2048^3 into smaller 512^3 arrays
-    smaller_groups, range_list = split_zarr_group(merged_velocity, desired_cube_side, dims)
-
-    print('Done preparing data. Starting to verify...')
-
-    return smaller_groups, range_list
-
-
 def node_assignment(cube_side: int):
     """
     Ryan's node assignment code that solves the Color-matching problem
@@ -166,8 +124,6 @@ def list_fileDB_folders():
 def merge_velocities(transposed_ds, chunk_size_base=64):
     """
         Merge the 3 velocity components/directions - such merging exhibits faster 3-component reads. This is a Dask lazy computation
-        
-        :param data_xr: the dataset (Xarray group) with 3 velocity components to merge
     """
 
     # Merge Velocities into 1
