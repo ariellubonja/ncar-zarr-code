@@ -4,7 +4,7 @@ from dask.array.utils import assert_eq
 import dask.array as da
 from parameterized import parameterized
 
-from utils.write_tools import get_sharding_queue
+from src.utils.write_tools import get_sharding_queue
 
 
 class VerifyZarrDataCorrectness(unittest.TestCase):

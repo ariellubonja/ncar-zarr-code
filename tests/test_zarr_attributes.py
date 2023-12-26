@@ -1,11 +1,10 @@
 import unittest
 import zarr
 import glob
-import os
 
-from utils import write_tools
-from utils.write_tools import flatten_3d_list
-from utils.read_utils import extract_netcdf_timestep
+from src.utils import write_tools
+from src.utils.write_tools import flatten_3d_list
+from src.utils.read_utils import extract_netcdf_timestep
 
 
 # TODO Fix this, use parameterize to generate tests for each item in the queue
@@ -33,6 +32,7 @@ class VerifyZarrAttributes(unittest.TestCase):
 
 
     def run_tests_for_single_file(self, file_path, timestep_nr):
+        # TODO Call NCARDataset class for this
         cubes, _ = write_tools.prepare_data(file_path)
         cubes = flatten_3d_list(cubes)
 
