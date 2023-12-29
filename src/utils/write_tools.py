@@ -2,7 +2,7 @@ import numpy as np
 import xarray as xr
 import os
 import dask.array as da
-import dask
+# import dask
 import math, queue
 from itertools import product
 
@@ -15,12 +15,6 @@ except ImportError:
     subprocess.check_call([sys.executable, '-m', 'pip', 'install', 'morton-py'])
 finally:
     import morton
-
-
-raw_ncar_folder_paths = [
-    '/home/idies/workspace/turb/data02_02/ncar-high-rate-fixed-dt',
-    '/home/idies/workspace/turb/data02_03/ncar-high-rate-fixed-dt',
-]
 
 
 def node_assignment(cube_side: int):
@@ -195,6 +189,9 @@ def search_dict_by_value(dictionary, value):
 
 
 def get_512_chunk_destinations(dest_folder_name, write_type, timestep_nr, array_cube_side=2048):
+    if write_type == "back":
+        raise NotImplementedError("TODO Implement writing backup copies")
+
     folders = list_fileDB_folders()
 
     # Avoiding 7-2 and 9-2 - they're too full as of May 2023
@@ -274,6 +271,12 @@ def get_sharding_queue():
     NetCDF data is sharded into smaller chunks, which are distributed round-robin.
     This method gathers these shards' paths and adds them to queue to compare their data with the original.
     """
+    # TODO Call this using dataset Class. I don't like this hard-coding
+    raw_ncar_folder_paths = [
+        '/home/idies/workspace/turb/data02_02/ncar-high-rate-fixed-dt',
+        '/home/idies/workspace/turb/data02_03/ncar-high-rate-fixed-dt',
+    ]
+
     queue = []
     array_cube_side = 2048
     dest_folder_name = "sabl2048b"

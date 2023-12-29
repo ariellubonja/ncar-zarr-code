@@ -54,8 +54,7 @@ class Dataset(ABC):
 
 
     def _get_data_cube_side(self):
-        # TODO Implement reading the length of the 3D cube side from path
-        raise NotImplementedError()
+        raise NotImplementedError('TODO Implement reading the length of the 3D cube side from path')
     
 
     @abstractmethod
