@@ -10,8 +10,9 @@ if __name__ == "__main__":
     parser.add_argument('-n', '--name', type=str,
                         help='Name of the dataset e.g. sabl2048b. Folders are created using this', required=True)
     parser.add_argument('-p', '--path', type=str,
-                    help='path to where the NCAR .netcdf files are located', required=True)
-    parser.add_argument('-t', '--timestep', type=int, required=True, help='The timestep of the dataset to be processed')
+                        help='path to where each dataset file is located. Please specify 1 file and not whole '
+                             'directories',
+                        required=True)
 
     parser.add_argument('--distribution', type=str, choices=['prod', 'back'], default='prod',
                         help='Whether distribution should be "prod" for production or "back" for backup')
@@ -26,7 +27,6 @@ if __name__ == "__main__":
     # TODO Do some checking
     args = parser.parse_args()
     DATASET_NAME = args.name
-    TIMESTEP = args.timestep
     LOCATION_PATH = args.path
     ZARR_CHUNK_SIDE = args.zarr_chunk_size
     desired_cube_side = args.desired_cube_side
@@ -43,8 +43,7 @@ if __name__ == "__main__":
                                 location_path=LOCATION_PATH,
                                 zarr_chunk_size=ZARR_CHUNK_SIDE,
                                 desired_cube_side=desired_cube_side,
-                                encoding=ENCODING,
-                                timestep=TIMESTEP)
+                                encoding=ENCODING)
 
     lazy_zarr_cubes = ncar_dataset.transform_to_zarr()
     ncar_dataset.distribute_to_filedb(lazy_zarr_cubes, PROD_OR_BACKUP)

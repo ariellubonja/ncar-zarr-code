@@ -9,8 +9,8 @@ Run `main.py` with the necessary arguments to initiate the process of converting
 Command-Line Arguments:
 
 
-- --timestep: The timestep number for the NCAR data (required).
-- -p or --path: Path to the location of the NCAR .netcdf files (required).
+[//]: # (- --timestep: The timestep number for the NCAR data &#40;required&#41;.)
+- -p or --path: Path to the location of the data file (required). Specify individual filenames for each timestep, not the directory.
 - -zc or --zarr_chunk_size: Zarr chunk size. Defaults to 64.
 - --desired_cube_side: Desired side length of the 3D data cube. Defaults to 512.
 - --zarr_encoding: Boolean flag to enable custom Zarr encoding. Currently not implemented. Defaults to True.
@@ -19,12 +19,14 @@ Command-Line Arguments:
 
 Example Command:
 
-> python main.py --timestep 10 -p /path/to/ncar/netcdf/files --zarr_chunk_size 64 --desired_cube_side 512 --distribution prod
+> python src/main.py -p /path/to/ncar/netcdf/files/jhd.000.nc -n sabl2048a
 
 
 Notes:
 
 The script currently does not implement custom Zarr encoding (`--zarr_encoding` flag). Please edit `main.py` to modify encoding parameters.
+
+<i>The script reads the Timestep from the input file name</i> 
 
 Optimal Zarr chunk size has been found to be 64^3 by Mike Schnaubern and Ryan Hausen. This is the default chunk size.
 

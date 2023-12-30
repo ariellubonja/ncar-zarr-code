@@ -1,3 +1,6 @@
+# TODO Delete this file. It has been incorporated into main.py, dataset.py and write_tools.py
+
+
 import argparse
 import sys, os
 import queue

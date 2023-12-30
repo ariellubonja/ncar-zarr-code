@@ -43,29 +43,27 @@ class Dataset(ABC):
         Distributes the dataset to FileDB using Ryan Hausen's node_assignment() node coloring alg.
     """
 
-
-    def __init__(self, name, location_path, zarr_chunk_size, desired_cube_side, encoding, timestep):
+    def __init__(self, name, location_path, zarr_chunk_size, desired_cube_side, encoding):
         self.name = name
         self.location_path = location_path
         self.zarr_chunk_size = zarr_chunk_size
         self.desired_cube_side = desired_cube_side
         self.encoding = encoding
-        self.timestep = timestep
 
+        self.timestep = write_tools.extract_timestep_from_filename(self.location_path)
 
     def _get_data_cube_side(self):
         raise NotImplementedError('TODO Implement reading the length of the 3D cube side from path')
-    
 
     @abstractmethod
     def transform_to_zarr(self):
         raise NotImplementedError("Subclasses must implement this method")
 
-
     def distribute_to_filedb(self, lazy_zarr_cubes, PROD_OR_BACKUP='prod', NUM_THREADS=34):
         q = queue.Queue()
 
-        dests = write_tools.get_512_chunk_destinations(self.name, PROD_OR_BACKUP, self.timestep, self._get_data_cube_side())
+        dests = write_tools.get_512_chunk_destinations(self.name, PROD_OR_BACKUP, self.timestep,
+                                                       self._get_data_cube_side())
 
         # Populate the queue with Write to FileDB tasks
         for i in range(len(dests)):
@@ -99,10 +97,9 @@ class NCAR_Dataset(Dataset):
 
         return cubes
 
-
     def _prepare_NCAR_NetCDF(self):
-                # dask_local_dir='/home/idies/workspace/turb/data02_02', n_dask_workers=4):  # Using dask is slower :(
-            """
+        # dask_local_dir='/home/idies/workspace/turb/data02_02', n_dask_workers=4):  # Using dask is slower :(
+        """
             Prepare data for writing to FileDB. This includes:
                 - Merging velocity components
                 - Splitting into smaller chunks (64^3)
@@ -110,32 +107,29 @@ class NCAR_Dataset(Dataset):
                 - Splitting 2048^3 arrays into 512^3 chunks
             """
 
-            # print("Started preparing NetCDF data for verification. This will take ~20min")
-            # client = Client(n_workers=n_dask_workers, local_directory=dask_local_dir)
-            data_xr = xr.open_dataset(self.location_path, chunks={'nnz': self.zarr_chunk_size, 'nny': self.zarr_chunk_size, 'nnx': self.zarr_chunk_size})
+        # print("Started preparing NetCDF data for verification. This will take ~20min")
+        # client = Client(n_workers=n_dask_workers, local_directory=dask_local_dir)
+        data_xr = xr.open_dataset(self.location_path, chunks={'nnz': self.zarr_chunk_size, 'nny': self.zarr_chunk_size,
+                                                              'nnx': self.zarr_chunk_size})
 
-            assert isinstance(data_xr['e'].data, dask.array.core.Array)
+        assert isinstance(data_xr['e'].data, dask.array.core.Array)
 
-            # Add an extra dimension to the data to match isotropic8192
-            # Drop is there to drop the Coordinates object that is created - this creates a separate folder when to_zarr() is called
-            expanded_ds = data_xr.expand_dims({'extra_dim': [1]}).drop_vars('extra_dim')
-            # The above adds the extra dimension to the start. Fix that - in the back
-            transposed_ds = expanded_ds.transpose('nnz', 'nny', 'nnx', 'extra_dim')
+        # Add an extra dimension to the data to match isotropic8192 Drop is there to drop the Coordinates object
+        # that is created - this creates a separate folder when to_zarr() is called
+        expanded_ds = data_xr.expand_dims({'extra_dim': [1]}).drop_vars('extra_dim')
+        # The above adds the extra dimension to the start. Fix that - in the back
+        transposed_ds = expanded_ds.transpose('nnz', 'nny', 'nnx', 'extra_dim')
 
-            # Group 3 velocity components together
-            # Never use dask with remote location on this!!
-            merged_velocity = write_tools.merge_velocities(transposed_ds, chunk_size_base=self.zarr_chunk_size)
+        # Group 3 velocity components together
+        # Never use dask with remote network location on this!!
+        merged_velocity = write_tools.merge_velocities(transposed_ds, chunk_size_base=self.zarr_chunk_size)
 
-            # client.close()
+        merged_velocity = merged_velocity.rename({'e': 'energy', 't': 'temperature', 'p': 'pressure'})
 
-            merged_velocity = merged_velocity.rename({'e': 'energy', 't': 'temperature', 'p': 'pressure'})
+        dims = [dim for dim in data_xr.dims]
+        dims.reverse()  # use (nnz, nny, nnx) instead of (nnx, nny, nnz)
 
-            dims = [dim for dim in data_xr.dims]
-            dims.reverse()  # use (nnz, nny, nnx) instead of (nnx, nny, nnz)
+        # Split 2048^3 into smaller 512^3 arrays
+        smaller_groups, range_list = write_tools.split_zarr_group(merged_velocity, self.desired_cube_side, dims)
 
-            # Split 2048^3 into smaller 512^3 arrays
-            smaller_groups, range_list = write_tools.split_zarr_group(merged_velocity, self.desired_cube_side, dims)
-
-            # print('Done preparing data. Starting to verify...')
-
-            return smaller_groups, range_list
+        return smaller_groups, range_list

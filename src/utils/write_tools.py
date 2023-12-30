@@ -1,13 +1,14 @@
-import numpy as np
-import xarray as xr
+import math
 import os
-import dask.array as da
-# import dask
-import math, queue
-from itertools import product
-
+import queue
+import re
 import subprocess
 import sys
+from itertools import product
+
+import dask.array as da
+import numpy as np
+import xarray as xr
 
 try:
     import morton
@@ -298,3 +299,25 @@ def get_sharding_queue():
         queue.append((cubes[i], dests[i]))
 
     return queue
+
+
+def extract_timestep_from_filename(filename):
+    """
+    Extracts the timestep number from a filename.
+
+    Assumes that the filename contains a numeric part which represents the timestep.
+    This numeric part may or may not be zero-padded.
+
+    :param filename: The filename to extract the timestep from.
+    :return: The extracted timestep as an integer, or None if no numeric part is found.
+    """
+    # Extract the basename in case a full path is provided
+    basename = os.path.basename(filename)
+
+    # Regular expression to find one or more digits
+    match = re.search(r'\d+', basename)
+
+    if match:
+        return int(match.group())
+    else:
+        raise ValueError(f'No numeric part found in filename {filename}. This is needed to determine the timestep nr.')
