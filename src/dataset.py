@@ -49,21 +49,25 @@ class Dataset(ABC):
         self.zarr_chunk_size = zarr_chunk_size
         self.desired_cube_side = desired_cube_side
         self.encoding = encoding
-
+        self.array_cube_side = None  # Must be populated by transform_to_zarr()
         self.timestep = write_tools.extract_timestep_from_filename(self.location_path)
 
-    def _get_data_cube_side(self):
+    def _get_data_cube_side(self, data_xarray):
         raise NotImplementedError('TODO Implement reading the length of the 3D cube side from path')
 
     @abstractmethod
     def transform_to_zarr(self):
+        """
+        Function that converts the dataset to Zarr format. Dataset-specific and therefore must be implemented by
+        subclasses
+        """
         raise NotImplementedError("Subclasses must implement this method")
 
     def distribute_to_filedb(self, lazy_zarr_cubes, PROD_OR_BACKUP='prod', NUM_THREADS=34):
         q = queue.Queue()
 
         dests = write_tools.get_512_chunk_destinations(self.name, PROD_OR_BACKUP, self.timestep,
-                                                       self._get_data_cube_side())
+                                                       self.array_cube_side)
 
         # Populate the queue with Write to FileDB tasks
         for i in range(len(dests)):
@@ -98,26 +102,27 @@ class NCAR_Dataset(Dataset):
         return cubes
 
     def _prepare_NCAR_NetCDF(self):
-        # dask_local_dir='/home/idies/workspace/turb/data02_02', n_dask_workers=4):  # Using dask is slower :(
         """
-            Prepare data for writing to FileDB. This includes:
-                - Merging velocity components
-                - Splitting into smaller chunks (64^3)
-                - Unabbreviating variable names
-                - Splitting 2048^3 arrays into 512^3 chunks
-            """
+        Prepare data for writing to FileDB. This includes:
+            - Merging velocity components
+            - Splitting into smaller chunks (64^3)
+            - Unabbreviating variable names
+            - Splitting 2048^3 arrays into 512^3 chunks
 
-        # print("Started preparing NetCDF data for verification. This will take ~20min")
-        # client = Client(n_workers=n_dask_workers, local_directory=dask_local_dir)
+        This function deals with the intricaties of the NCAR dataset. It is not meant to be used for other datasets.
+        """
+        # Open the dataset using xarray
         data_xr = xr.open_dataset(self.location_path, chunks={'nnz': self.zarr_chunk_size, 'nny': self.zarr_chunk_size,
                                                               'nnx': self.zarr_chunk_size})
 
         assert isinstance(data_xr['e'].data, dask.array.core.Array)
 
+        self.array_cube_side = self._get_data_cube_side(data_xr)
+
         # Add an extra dimension to the data to match isotropic8192 Drop is there to drop the Coordinates object
         # that is created - this creates a separate folder when to_zarr() is called
         expanded_ds = data_xr.expand_dims({'extra_dim': [1]}).drop_vars('extra_dim')
-        # The above adds the extra dimension to the start. Fix that - in the back
+        # The above adds the extra dimension to the start. Fix that - put it in the back
         transposed_ds = expanded_ds.transpose('nnz', 'nny', 'nnx', 'extra_dim')
 
         # Group 3 velocity components together
@@ -133,3 +138,17 @@ class NCAR_Dataset(Dataset):
         smaller_groups, range_list = write_tools.split_zarr_group(merged_velocity, self.desired_cube_side, dims)
 
         return smaller_groups, range_list
+
+
+    def _get_data_cube_side(self, data_xarray: xr.Dataset) -> int:
+        """
+        Gets the side length of one 3D cube for the NCAR dataset (private method)
+
+        Args:
+            data_xarray (xarray.Dataset): The xarray Dataset object containing the data
+
+        Returns:
+            int: The side length of the array cube. For example, if each Variable in the dataset is 2048^3, then this
+                function returns 2048
+        """
+        return data_xarray['e'].data.shape[0]

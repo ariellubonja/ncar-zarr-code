@@ -22,13 +22,17 @@ Example Command:
 > python src/main.py -p /path/to/ncar/netcdf/files/jhd.000.nc -n sabl2048a
 
 
-Notes:
+##### Notes
 
-The script currently does not implement custom Zarr encoding (`--zarr_encoding` flag). Please edit `main.py` to modify encoding parameters.
+- Input must be [Xarray-compatible](https://docs.xarray.dev/en/stable/generated/xarray.Dataset.html)
 
-<i>The script reads the Timestep from the input file name</i> 
+- The script currently does not implement custom Zarr encoding (`--zarr_encoding` flag). Please edit `main.py` to modify encoding parameters.
 
-Optimal Zarr chunk size has been found to be 64^3 by Mike Schnaubern and Ryan Hausen. This is the default chunk size.
+- The script reads the Timestep from the input file name 
+
+- Optimal Zarr chunk size has been found to be 64^3 by Mike Schnaubern and Ryan Hausen. This is the default chunk size.
+
+- I've found that using Dask's local dir (`dask_local_dir='/home/idies/workspace/turb/data02_02', n_dask_workers=4)` is slower than not.
 
 
 ### Workflow Overview
