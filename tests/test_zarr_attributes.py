@@ -2,8 +2,8 @@ import unittest
 import zarr
 import glob
 
-from src.utils import write_tools
-from src.utils.write_tools import flatten_3d_list
+from src.utils import write_utils
+from src.utils.write_utils import flatten_3d_list
 from src.utils.read_utils import extract_netcdf_timestep
 
 
@@ -20,7 +20,7 @@ class VerifyZarrAttributes(unittest.TestCase):
     def setUpClass(cls):
         # Preparing a list of all timestep files to test
         cls.timestep_files = []
-        for folder in write_tools.raw_ncar_folder_paths:
+        for folder in write_utils.raw_ncar_folder_paths:
             cls.timestep_files.extend(glob.glob(f"{folder}/jhd.*.nc"))
 
 
@@ -33,10 +33,10 @@ class VerifyZarrAttributes(unittest.TestCase):
 
     def run_tests_for_single_file(self, file_path, timestep_nr):
         # TODO Call NCARDataset class for this
-        cubes, _ = write_tools.prepare_data(file_path)
+        cubes, _ = write_utils.prepare_data(file_path)
         cubes = flatten_3d_list(cubes)
 
-        dests = write_tools.get_512_chunk_destinations(self.dest_folder_name, self.write_type, timestep_nr, self.array_cube_side)
+        dests = write_utils.get_512_chunk_destinations(self.dest_folder_name, self.write_type, timestep_nr, self.array_cube_side)
 
         for original_512, zarr_512_path in zip(cubes, dests):
             zarr_512 = zarr.open_group(zarr_512_path, mode='r')

@@ -5,7 +5,7 @@
 from abc import ABC, abstractmethod
 import queue
 import threading
-from utils import write_tools
+from utils import write_utils
 import xarray as xr
 import dask
 
@@ -50,7 +50,7 @@ class Dataset(ABC):
         self.desired_cube_side = desired_cube_side
         self.encoding = encoding
         self.array_cube_side = None  # Must be populated by transform_to_zarr()
-        self.timestep = write_tools.extract_timestep_from_filename(self.location_path)
+        self.timestep = write_utils.extract_timestep_from_filename(self.location_path)
 
     def _get_data_cube_side(self, data_xarray):
         raise NotImplementedError('TODO Implement reading the length of the 3D cube side from path')
@@ -66,7 +66,7 @@ class Dataset(ABC):
     def distribute_to_filedb(self, lazy_zarr_cubes, PROD_OR_BACKUP='prod', NUM_THREADS=34):
         q = queue.Queue()
 
-        dests = write_tools.get_512_chunk_destinations(self.name, PROD_OR_BACKUP, self.timestep,
+        dests = write_utils.get_512_chunk_destinations(self.name, PROD_OR_BACKUP, self.timestep,
                                                        self.array_cube_side)
 
         # Populate the queue with Write to FileDB tasks
@@ -75,7 +75,7 @@ class Dataset(ABC):
 
         threads = []  # Create threads and start them
         for _ in range(NUM_THREADS):
-            t = threading.Thread(target=write_tools.write_to_disk, args=(q,))
+            t = threading.Thread(target=write_utils.write_to_disk, args=(q,))
             t.start()
             threads.append(t)
 
@@ -97,7 +97,7 @@ class NCAR_Dataset(Dataset):
         Read and lazily transform the NetCDF data of NCAR to Zarr. This makes data ready for distributing to FileDB.
         """
         cubes, _ = self._prepare_NCAR_NetCDF()
-        cubes = write_tools.flatten_3d_list(cubes)
+        cubes = write_utils.flatten_3d_list(cubes)
 
         return cubes
 
@@ -127,7 +127,7 @@ class NCAR_Dataset(Dataset):
 
         # Group 3 velocity components together
         # Never use dask with remote network location on this!!
-        merged_velocity = write_tools.merge_velocities(transposed_ds, chunk_size_base=self.zarr_chunk_size)
+        merged_velocity = write_utils.merge_velocities(transposed_ds, chunk_size_base=self.zarr_chunk_size)
 
         merged_velocity = merged_velocity.rename({'e': 'energy', 't': 'temperature', 'p': 'pressure'})
 
@@ -135,7 +135,7 @@ class NCAR_Dataset(Dataset):
         dims.reverse()  # use (nnz, nny, nnx) instead of (nnx, nny, nnz)
 
         # Split 2048^3 into smaller 512^3 arrays
-        smaller_groups, range_list = write_tools.split_zarr_group(merged_velocity, self.desired_cube_side, dims)
+        smaller_groups, range_list = write_utils.split_zarr_group(merged_velocity, self.desired_cube_side, dims)
 
         return smaller_groups, range_list
 
