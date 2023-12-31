@@ -34,6 +34,29 @@ Example Command:
 
 - I've found that using Dask's local dir (`dask_local_dir='/home/idies/workspace/turb/data02_02', n_dask_workers=4)` is slower than not.
 
+## If You Want to Reuse Script for Your Own Data and Network of Disks
+
+[//]: # (### Customizing Destination Layout and Assignment Schema)
+
+
+[//]: # (If you need to adapt the destination layout for Zarr files or change the node assignment schema in this repository, you can do so by editing specific functions within `utils/write_utils.py`. Below are guidelines on where and how to make these changes:)
+
+#### Changing Destination Paths for Distributed Files
+
+
+To customize the dispersion of Zarr files across your network of disks:
+
+- Edit the Destination Path Logic: `utils/write_utils.py:get_512_chunk_destinations()` determines the destination paths for the Zarr files in an ordered list. Change this to match your desired directory structure
+
+#### Adapting the Disk Node Assignment Schema
+
+This code is located in `utils/write_utils.py:node_assignment()`
+
+The function takes in the number of nodes and the number of batches and returns a list of lists, where each sublist contains the node assignments for a batch. The current implementation uses the [Node/Map Coloring algorithm](https://en.wikipedia.org/wiki/Graph_coloring#Node_coloring) to assign nodes to batches. You can modify this function to implement your own node assignment schema.
+
+#### Need Further Assistance?
+If you encounter difficulties or have specific questions about customizing the code for your use case, please feel free to open an issue in the repository. We're here to help and would be happy to assist you in adapting the tool to your specific needs.
+
 
 ### Workflow Overview
 
