@@ -31,7 +31,7 @@ def load_all_expected_hashes():
             with open(hash_file_path, 'r') as hash_file:
                 for line in hash_file:
                     temp_line = line.split('  ')
-                    temp_line[1] = data_path + temp_line[1]
+                    temp_line[1] = os.path.join(data_path, temp_line[1].replace('\n', ''))
                     all_expected_hashes.append(tuple(temp_line))
         else:
             raise FileNotFoundError(f"hash.txt file expected but not found at {hash_file_path}")
@@ -53,3 +53,4 @@ class TestFileHashes(unittest.TestCase):
         computed_hash = get_sha256(full_file_path)
         self.assertEqual(computed_hash, true_hash,
                          f"Hash mismatch for {full_file_path}")
+
