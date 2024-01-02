@@ -73,6 +73,7 @@ class Dataset(ABC):
         for i in range(len(dests)):
             q.put((lazy_zarr_cubes[i], dests[i], self.encoding))
 
+        # TODO Important! Fix raise ValueError('task_done() called too many times')
         threads = []  # Create threads and start them
         for _ in range(NUM_THREADS):
             t = threading.Thread(target=write_utils.write_to_disk, args=(q,))
