@@ -21,12 +21,12 @@ def load_all_expected_hashes():
     Load all expected hashes from 'hash.txt' files in the directories specified in 'config.yaml'.
     """
     # Load YAML configuration
-    with open('config.yaml', 'r') as file:
+    with open('tests/config.yaml', 'r') as file:
         config = yaml.safe_load(file)
 
     all_expected_hashes = []
     # Iterate over each data path and load the corresponding hash entries
-    for data_path in config['data_paths']:
+    for data_path in config['original_data_paths']:
         hash_file_path = os.path.join(data_path, 'hash.txt')
         if os.path.exists(hash_file_path):
             with open(hash_file_path, 'r') as hash_file:
