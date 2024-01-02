@@ -5,15 +5,14 @@ from parameterized import parameterized
 import yaml
 
 
-def get_sha256(raw_ncar_folder_path, filename):
+def get_sha256(full_file_path):
     """
     Return the SHA-256 hash and filename in the format 'hash filename'.
     """
-    full_path = os.path.join(raw_ncar_folder_path, filename)
-    cmd = ["sha256sum", full_path]
+    cmd = ["sha256sum", full_file_path]
     result = subprocess.run(cmd, stdout=subprocess.PIPE)
     hash_value = result.stdout.decode().strip().split()[0]
-    return f"{hash_value}  {filename}"
+    return hash_value
 
 
 def load_all_expected_hashes():
@@ -31,19 +30,26 @@ def load_all_expected_hashes():
         if os.path.exists(hash_file_path):
             with open(hash_file_path, 'r') as hash_file:
                 for line in hash_file:
-                    all_expected_hashes.append((line.strip(), data_path))
+                    temp_line = line.split('  ')
+                    temp_line[1] = data_path + temp_line[1]
+                    all_expected_hashes.append(tuple(temp_line))
         else:
             raise FileNotFoundError(f"hash.txt file expected but not found at {hash_file_path}")
 
-    # Make each item a tuple of a tuple and the data path
-    return [((line.strip(), data_path),) for data_path, lines in all_expected_hashes for line in lines]
+    return all_expected_hashes
 
 
 class TestFileHashes(unittest.TestCase):
     @parameterized.expand(load_all_expected_hashes())
-    def test_file_hash(self, hash_entry):
-        expected_hash_entry, data_path = hash_entry
-        expected_hash, expected_filename = expected_hash_entry.split('  ', 1)
-        computed_entry = get_sha256(data_path, expected_filename)
-        self.assertEqual(computed_entry, expected_hash_entry,
-                         f"Hash mismatch for {expected_filename}")
+    def test_file_hash(self, true_hash, full_file_path):
+        """
+        Test that the hash of the file at full_file_path matches the expected hash, passed as argument to this function.
+        True hash is read from hash.txt in each directory where the data is stored.
+        Args:
+            true_hash: str
+            full_file_path: str
+        """
+
+        computed_hash = get_sha256(full_file_path)
+        self.assertEqual(computed_hash, true_hash,
+                         f"Hash mismatch for {full_file_path}")
