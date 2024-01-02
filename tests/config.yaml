@@ -1,0 +1,6 @@
+original_data_paths:
+  #  low rate
+  - /home/idies/workspace/turb/data02_02/ncar-low-rate-fixed-dt
+  #  high rate
+  - /home/idies/workspace/turb/data02_02/ncar-high-rate-fixed-dt/
+  - /home/idies/workspace/turb/data02_03/ncar-high-rate-fixed-dt/

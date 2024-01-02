@@ -6,6 +6,7 @@ from parameterized import parameterized
 
 from src.utils.write_utils import get_sharding_queue
 
+# TODO Read path from config file
 
 class VerifyZarrDataCorrectness(unittest.TestCase):
 

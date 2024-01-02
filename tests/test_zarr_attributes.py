@@ -6,6 +6,7 @@ from src.utils import write_utils
 from src.utils.write_utils import flatten_3d_list
 from src.utils.read_utils import extract_netcdf_timestep
 
+# TODO Read path from config file
 
 # TODO Fix this, use parameterize to generate tests for each item in the queue
 class VerifyZarrAttributes(unittest.TestCase):
