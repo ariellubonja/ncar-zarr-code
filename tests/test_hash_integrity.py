@@ -35,7 +35,8 @@ def load_all_expected_hashes():
         else:
             raise FileNotFoundError(f"hash.txt file expected but not found at {hash_file_path}")
 
-    return all_expected_hashes
+    # Make each item a tuple of a tuple and the data path
+    return [((line.strip(), data_path),) for data_path, lines in all_expected_hashes for line in lines]
 
 
 class TestFileHashes(unittest.TestCase):
