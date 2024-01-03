@@ -10,7 +10,7 @@ import dask.array as da
 import numpy as np
 import xarray as xr
 
-from dataset import Dataset
+from src.dataset import Dataset
 
 try:
     import morton
