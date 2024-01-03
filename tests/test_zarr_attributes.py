@@ -47,7 +47,7 @@ class VerifyNCARZarrAttributes(unittest.TestCase):
         for dataset in self.ncar_datasets:
             for timestep in range(dataset.start_timestep, dataset.end_timestep + 1):
                 lazy_zarr_cubes = dataset.transform_to_zarr(timestep)
-                destination_paths = write_utils.get_zarr_array_destinations(dataset)
+                destination_paths = write_utils.get_zarr_array_destinations(dataset, timestep)
 
                 for original_512, zarr_512_path in zip(lazy_zarr_cubes, destination_paths):
                     with self.subTest(timestep=timestep):
