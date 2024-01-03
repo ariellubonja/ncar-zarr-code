@@ -10,6 +10,8 @@ import dask.array as da
 import numpy as np
 import xarray as xr
 
+from dataset import Dataset
+
 try:
     import morton
 except ImportError:
@@ -189,18 +191,27 @@ def search_dict_by_value(dictionary, value):
     return None  # Value not found in the dictionary
 
 
-def get_512_chunk_destinations(dest_folder_name, write_type, timestep_nr, array_cube_side=2048):
-    if write_type == "back":
+def get_zarr_array_destinations(dataset: Dataset):
+    """
+    Destinations of all Zarr arrays pertaining to how they are distributed on FileDB, according to Node Coloring
+    Args:
+        dataset (Dataset): dataset object filled with attributes of Dataset class
+
+    Returns:
+        list[str]: List of destination paths of Zarr arrays
+    """
+    if dataset.prod_or_backup == "back":
         raise NotImplementedError("TODO Implement writing backup copies")
 
     folders = list_fileDB_folders()
 
+    # TODO Hard-coded
     # Avoiding 7-2 and 9-2 - they're too full as of May 2023
     folders.remove("/home/idies/workspace/turb/data09_02/zarr/")
     folders.remove("/home/idies/workspace/turb/data07_02/zarr/")
 
     for i in range(len(folders)):
-        folders[i] += dest_folder_name + "_" + str(i + 1).zfill(2) + "_" + write_type + "/"
+        folders[i] += dataset.name + "_" + str(i + 1).zfill(2) + "_" + dataset.prod_or_backup + "/"
 
     range_list = []  # Where chunks start and end. Needed for Mike's code to find correct chunks to access
     smaller_size = 512
@@ -300,7 +311,7 @@ def get_sharding_queue():
     cubes, _ = prepare_data(file_path)
     cubes = flatten_3d_list(cubes)
 
-    dests = get_512_chunk_destinations(dest_folder_name, write_type, timestep_nr, array_cube_side)
+    dests = get_zarr_array_destinations(dest_folder_name, write_type, timestep_nr, array_cube_side)
 
     for i in range(len(dests)):
         queue.append((cubes[i], dests[i]))
