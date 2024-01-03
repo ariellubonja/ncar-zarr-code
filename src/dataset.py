@@ -20,7 +20,7 @@ class Dataset(ABC):
     ----------
     name : str
         The name of the dataset
-    location_path : (str)
+    location_paths : list[str]
         Path to the specific Xarray-compatible file to be Zarrified and distributed to FileDB. File should belong to
         one timestep of the data
     desired_zarr_chunk_size : int
@@ -40,14 +40,14 @@ class Dataset(ABC):
         Distributes the dataset to FileDB using Ryan Hausen's node_assignment() node coloring alg.
     """
 
-    def __init__(self, name, location_path, desired_zarr_chunk_size, desired_zarr_array_length, prod_or_backup):
+    def __init__(self, name, location_paths, desired_zarr_chunk_size, desired_zarr_array_length, prod_or_backup):
         self.name = name
-        self.location_path = location_path
+        self.location_paths = location_paths  # List of paths
+        self.timesteps = [write_utils.extract_timestep_from_filename(path) for path in location_paths]
         self.desired_zarr_chunk_size = desired_zarr_chunk_size
         self.desired_zarr_array_length = desired_zarr_array_length
         self.prod_or_backup = prod_or_backup
         self.original_array_length = None  # Must be populated by subclass method
-        self.timestep = write_utils.extract_timestep_from_filename(self.location_path)
 
         # TODO Generalize this. It's hard-coded for NCAR
         self.encoding = {
@@ -66,7 +66,7 @@ class Dataset(ABC):
 
 
     @abstractmethod
-    def transform_to_zarr(self):
+    def transform_to_zarr(self, file_path):
         """
         Function that converts the dataset to Zarr format. Dataset-specific and therefore must be implemented by
         subclasses
@@ -74,36 +74,37 @@ class Dataset(ABC):
         raise NotImplementedError("Subclasses must implement this method")
 
 
-    def distribute_to_filedb(self, lazy_zarr_cubes, PROD_OR_BACKUP='prod', NUM_THREADS=34):
+    def distribute_to_filedb(self, NUM_THREADS=34):
         '''
         Distribute the dataset to FileDB using Ryan Hausen's node_assignment() node coloring alg.
 
         Args:
             lazy_zarr_cubes: List of lists of zarr groups that have not been evaluated yet (lazy)
-            PROD_OR_BACKUP: Whether you want to write a production or backup copy
             NUM_THREADS (int): Number of threads to use when writing to disk. Currently 34 to match nr. of disks on
                 FileDB
         '''
         # TODO Implement backup copy
-        q = queue.Queue()
+        for path in self.location_paths:
+            lazy_zarr_cubes = self.transform_to_zarr(path)
 
-        dests = write_utils.get_zarr_array_destinations(self.name, PROD_OR_BACKUP, self.timestep,
-                                                        self.original_array_length)
+            q = queue.Queue()
 
-        # Populate the queue with Write to FileDB tasks
-        for i in range(len(dests)):
-            q.put((lazy_zarr_cubes[i], dests[i], self.encoding))
+            dests = write_utils.get_zarr_array_destinations(self)
 
-        threads = []  # Create threads and start them
-        for _ in range(NUM_THREADS):
-            t = threading.Thread(target=write_utils.write_to_disk, args=(q,))
-            t.start()
-            threads.append(t)
+            # Populate the queue with Write to FileDB tasks
+            for i in range(len(dests)):
+                q.put((lazy_zarr_cubes[i], dests[i], self.encoding))
 
-        q.join()  # Wait for all tasks to be processed
+            threads = []  # Create threads and start them
+            for _ in range(NUM_THREADS):
+                t = threading.Thread(target=write_utils.write_to_disk, args=(q,))
+                t.start()
+                threads.append(t)
 
-        for t in threads:  # Wait for all threads to finish
-            t.join()
+            q.join()  # Wait for all tasks to be processed
+
+            for t in threads:  # Wait for all threads to finish
+                t.join()
 
 
 class NCAR_Dataset(Dataset):
@@ -113,16 +114,16 @@ class NCAR_Dataset(Dataset):
         This class implements transform_to_zarr(). Please see Dataset superclass for more details
     """
 
-    def transform_to_zarr(self):
+    def transform_to_zarr(self, file_path):
         """
         Read and lazily transform the NetCDF data of NCAR to Zarr. This makes data ready for distributing to FileDB.
         """
-        cubes, _ = self._prepare_NCAR_NetCDF()
+        cubes, _ = self._prepare_NCAR_NetCDF(file_path)
         cubes = write_utils.flatten_3d_list(cubes)
 
         return cubes
 
-    def _prepare_NCAR_NetCDF(self):
+    def _prepare_NCAR_NetCDF(self, file_path):
         """
         Prepare data for writing to FileDB. This includes:
             - Merging velocity components
@@ -134,7 +135,7 @@ class NCAR_Dataset(Dataset):
         """
         # Open the dataset using xarray
         # TODO The variable names are hard-coded
-        data_xr = xr.open_dataset(self.location_path,
+        data_xr = xr.open_dataset(file_path,
                                   chunks={'nnz': self.desired_zarr_chunk_size, 'nny': self.desired_zarr_chunk_size,
                                           'nnx': self.desired_zarr_chunk_size})
 
