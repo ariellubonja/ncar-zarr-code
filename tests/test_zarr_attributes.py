@@ -1,55 +1,64 @@
 import unittest
 import zarr
-import glob
 import yaml
 
 from src.utils import write_utils
-from src.utils.read_utils import extract_netcdf_timestep
 from src.dataset import NCAR_Dataset
 
 
 # TODO Use parameterize to generate tests for each item in the queue
-class VerifyZarrAttributes(unittest.TestCase):
-    """
-        Verify that the Zarr attributes are as expected. These include:
-        - Cube dimensions. Should be (512, 512, 512, 3) for velocity, (512, 512, 512, 1) otherwise
-        - Chunk sizes. Should be (64, 64, 64, 3) for velocity, (64, 64, 64, 1) otherwise
-        - Compression. Should be None
-    """
+class VerifyNCARZarrAttributes(unittest.TestCase):
     def __init__(self):
         super().__init__()
-        with open('tests/config.yaml', 'r') as file:
+        with open('config.yaml', 'r') as file:
             self.config = yaml.safe_load(file)
 
-        self.ncar_dataset = NCAR_Dataset(name=self.config['dataset_name'],
-                                         location_path=self.config['original_data_paths'],
-                                         desired_zarr_chunk_size=self.config['desired_zarr_chunk_length'],
-                                         desired_zarr_array_length=self.config['desired_zarr_chunk_length'],
-                                         prod_or_backup=self.config['prod_or_backup'])
-
-        self.lazy_zarr_cubes = self.ncar_dataset.transform_to_zarr()
-        self.destination_paths = write_utils.get_zarr_array_destinations(self.ncar_dataset)
-
-        # Preparing a list of all timestep files to test
-        self.timestep_files = []
-        for folder in self.config['original_data_paths']:
-            self.timestep_files.extend(glob.glob(f"{folder}/jhd.*.nc"))  # TODO fix this hard-coding
-
+        # Initialize NCAR_Dataset High Rate
+        self.ncar_datasets = [
+            NCAR_Dataset(
+                name='sabl2048b',
+                location_path=self.config['NCAR_high_rate_paths'][0],
+                desired_zarr_chunk_size=self.config['desired_zarr_chunk_length'],
+                desired_zarr_array_length=self.config['desired_zarr_chunk_length'],
+                prod_or_backup=self.config['prod_or_backup'],
+                start_timestep=0,
+                end_timestep=49
+            ),
+            NCAR_Dataset(
+                name='sabl2048b',
+                location_path=self.config['NCAR_high_rate_paths'][1],  # Split across 2 dirs
+                desired_zarr_chunk_size=self.config['desired_zarr_chunk_length'],
+                desired_zarr_array_length=self.config['desired_zarr_chunk_length'],
+                prod_or_backup=self.config['prod_or_backup'],
+                start_timestep=50,
+                end_timestep=99
+            ),
+            NCAR_Dataset(
+                name='sabl2048a',
+                location_path=self.config['NCAR_low_rate_path'],
+                desired_zarr_chunk_size=self.config['desired_zarr_chunk_length'],
+                desired_zarr_array_length=self.config['desired_zarr_chunk_length'],
+                prod_or_backup=self.config['prod_or_backup'],
+                start_timestep=0,
+                end_timestep=19
+            )
+        ]
 
     def test_all_timesteps(self):
-        for file_path in self.timestep_files:
-            timestep_nr = extract_netcdf_timestep(file_path)
-            with self.subTest(timestep=timestep_nr):
-                self.run_tests_for_single_file()
+        for dataset in self.ncar_datasets:
+            for timestep in range(dataset.start_timestep, dataset.end_timestep + 1):
+                lazy_zarr_cubes = dataset.transform_to_zarr(timestep)
+                destination_paths = write_utils.get_zarr_array_destinations(dataset)
 
-    def run_tests_for_single_file(self):
-        # TODO rename these horrible variable names
-        for original_512, zarr_512_path in zip(self.lazy_zarr_cubes, self.destination_paths):
-            zarr_512 = zarr.open_group(zarr_512_path, mode='r')
+                for original_512, zarr_512_path in zip(lazy_zarr_cubes, destination_paths):
+                    with self.subTest(timestep=timestep):
+                        self.run_tests_for_single_file(zarr_512_path)
 
-            self.verify_zarr_array_dims(zarr_512, zarr_512_path)
-            self.verify_zarr_chunk_sizes(zarr_512, zarr_512_path)
-            self.verify_zarr_compression(zarr_512, zarr_512_path)
+    def run_tests_for_single_file(self, zarr_512_path):
+        zarr_512 = zarr.open_group(zarr_512_path, mode='r')
+        self.verify_zarr_array_dims(zarr_512, zarr_512_path)
+        self.verify_zarr_chunk_sizes(zarr_512, zarr_512_path)
+        self.verify_zarr_compression(zarr_512, zarr_512_path)
 
     # TODO get Zarr group size from config.yaml
     def verify_zarr_array_dims(self, zarr_512, zarr_512_path):
