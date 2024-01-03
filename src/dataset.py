@@ -8,6 +8,8 @@ import threading
 from src.utils import write_utils
 import xarray as xr
 import dask
+import glob
+import os
 
 
 class Dataset(ABC):
@@ -20,9 +22,9 @@ class Dataset(ABC):
     ----------
     name : str
         The name of the dataset
-    location_paths : list[str]
-        Path to the specific Xarray-compatible file to be Zarrified and distributed to FileDB. File should belong to
-        one timestep of the data
+    location_path : str
+        Path to the directory containing Xarray-compatible files to be Zarrified and distributed to FileDB. One file
+         in the directory should belong to one timestep of the data
     desired_zarr_chunk_size : int
         The chunk size to be used when writing to Zarr
     desired_zarr_array_length : int
@@ -40,14 +42,17 @@ class Dataset(ABC):
         Distributes the dataset to FileDB using Ryan Hausen's node_assignment() node coloring alg.
     """
 
-    def __init__(self, name, location_paths, desired_zarr_chunk_size, desired_zarr_array_length, prod_or_backup):
+    def __init__(self, name, location_path, desired_zarr_chunk_size, desired_zarr_array_length, prod_or_backup,
+                 start_timestep, end_timestep):
         self.name = name
-        self.location_paths = location_paths  # List of paths
-        self.timesteps = [write_utils.extract_timestep_from_filename(path) for path in location_paths]
+        self.location_path = location_path  # List of paths
+        self.timesteps = [write_utils.extract_timestep_from_filename(path) for path in location_path]
         self.desired_zarr_chunk_size = desired_zarr_chunk_size
         self.desired_zarr_array_length = desired_zarr_array_length
         self.prod_or_backup = prod_or_backup
         self.original_array_length = None  # Must be populated by subclass method
+        self.start_timestep = start_timestep
+        self.end_timestep = end_timestep
 
         # TODO Generalize this. It's hard-coded for NCAR
         self.encoding = {
@@ -79,13 +84,12 @@ class Dataset(ABC):
         Distribute the dataset to FileDB using Ryan Hausen's node_assignment() node coloring alg.
 
         Args:
-            lazy_zarr_cubes: List of lists of zarr groups that have not been evaluated yet (lazy)
             NUM_THREADS (int): Number of threads to use when writing to disk. Currently 34 to match nr. of disks on
                 FileDB
         '''
-        # TODO Implement backup copy
-        for path in self.location_paths:
-            lazy_zarr_cubes = self.transform_to_zarr(path)
+        # TODO Implement backup copy write
+        for timestep in range(self.start_timestep, self.end_timestep + 1):
+            lazy_zarr_cubes = self.transform_to_zarr(timestep)
 
             q = queue.Queue()
 
@@ -113,17 +117,26 @@ class NCAR_Dataset(Dataset):
 
         This class implements transform_to_zarr(). Please see Dataset superclass for more details
     """
+    def __init__(self, name, location_path, desired_zarr_chunk_size, desired_zarr_array_length, prod_or_backup,
+                    start_timestep, end_timestep):
+        super().__init__(name, location_path, desired_zarr_chunk_size, desired_zarr_array_length, prod_or_backup,
+                         start_timestep, end_timestep)
 
-    def transform_to_zarr(self, file_path):
+        self.file_extension = '.nc'
+        self.NCAR_files = glob.glob(os.path.join(self.location_path, f'*{self.file_extension}'))
+
+
+    def transform_to_zarr(self, timestep: int) -> list:
         """
         Read and lazily transform the NetCDF data of NCAR to Zarr. This makes data ready for distributing to FileDB.
         """
-        cubes, _ = self._prepare_NCAR_NetCDF(file_path)
+        cubes, _ = self._prepare_NCAR_NetCDF(timestep)
         cubes = write_utils.flatten_3d_list(cubes)
 
         return cubes
 
-    def _prepare_NCAR_NetCDF(self, file_path):
+
+    def _prepare_NCAR_NetCDF(self, timestep: int):
         """
         Prepare data for writing to FileDB. This includes:
             - Merging velocity components
@@ -133,9 +146,10 @@ class NCAR_Dataset(Dataset):
 
         This function deals with the intricaties of the NCAR dataset. It is not meant to be used for other datasets.
         """
-        # Open the dataset using xarray
         # TODO The variable names are hard-coded
-        data_xr = xr.open_dataset(file_path,
+
+        # Open the dataset using xarray
+        data_xr = xr.open_dataset(self.NCAR_files[timestep],
                                   chunks={'nnz': self.desired_zarr_chunk_size, 'nny': self.desired_zarr_chunk_size,
                                           'nnx': self.desired_zarr_chunk_size})
 
@@ -163,6 +177,7 @@ class NCAR_Dataset(Dataset):
         smaller_groups, range_list = write_utils.split_zarr_group(merged_velocity, self.desired_zarr_array_length, dims)
 
         return smaller_groups, range_list
+
 
     def _get_data_cube_side(self, data_xarray: xr.Dataset) -> int:
         """

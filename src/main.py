@@ -20,9 +20,11 @@ if __name__ == "__main__":
                         help='Zarr chunk size (int)', default=64)
     parser.add_argument('--desired_cube_side', type=int, default=512,
                         help='The desired side length of the 3D data cube')
-    parser.add_argument('--zarr_encoding', type=bool, default=True,
-                        help='kwargs, including Compression to be passed to xarray.to_zarr(). Not implemented yet, '
-                             'please edit main.py')
+    parser.add_argument('-st', '--start_timestep', type=int, required=True,
+                        help='Timestep to start processing from. Due to SciServer job time limitations, not all '
+                             'timesteps can be processed at once.')
+    parser.add_argument('-et', '--end_timestep', type=int, required=True,
+                        help='Timestep to end processing at (inclusive). See -st for more info')
 
     # TODO Do some checking
     args = parser.parse_args()
@@ -31,13 +33,16 @@ if __name__ == "__main__":
     ZARR_CHUNK_SIDE = args.zarr_chunk_size
     desired_cube_side = args.desired_cube_side
     PROD_OR_BACKUP = args.distribution
+    start_timestep = args.start_timestep
+    end_timestep = args.end_timestep
 
 
     ncar_dataset = NCAR_Dataset(name=DATASET_NAME,
                                 location_path=LOCATION_PATH,
                                 desired_zarr_chunk_size=ZARR_CHUNK_SIDE,
                                 desired_zarr_array_length=desired_cube_side,
-                                prod_or_backup=PROD_OR_BACKUP)
+                                prod_or_backup=PROD_OR_BACKUP,
+                                start_timestep=start_timestep,
+                                end_timestep=end_timestep)
 
-    lazy_zarr_cubes = ncar_dataset.transform_to_zarr()
-    ncar_dataset.distribute_to_filedb(lazy_zarr_cubes, PROD_OR_BACKUP)
+    ncar_dataset.distribute_to_filedb()
