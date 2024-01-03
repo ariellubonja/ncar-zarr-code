@@ -65,10 +65,8 @@ class Dataset(ABC):
             "energy": dict(chunks=(desired_zarr_chunk_size, desired_zarr_chunk_size, desired_zarr_chunk_size, 1),
                            compressor=None)}
 
-
     def _get_data_cube_side(self, data_xarray):
         raise NotImplementedError('TODO Implement reading the length of the 3D cube side from path')
-
 
     @abstractmethod
     def transform_to_zarr(self, file_path):
@@ -77,7 +75,6 @@ class Dataset(ABC):
         subclasses
         """
         raise NotImplementedError("Subclasses must implement this method")
-
 
     def distribute_to_filedb(self, NUM_THREADS=34):
         '''
@@ -117,14 +114,15 @@ class NCAR_Dataset(Dataset):
 
         This class implements transform_to_zarr(). Please see Dataset superclass for more details
     """
+
     def __init__(self, name, location_path, desired_zarr_chunk_size, desired_zarr_array_length, prod_or_backup,
-                    start_timestep, end_timestep):
+                 start_timestep, end_timestep):
         super().__init__(name, location_path, desired_zarr_chunk_size, desired_zarr_array_length, prod_or_backup,
                          start_timestep, end_timestep)
 
         self.file_extension = '.nc'
         self.NCAR_files = glob.glob(os.path.join(self.location_path, f'*{self.file_extension}'))
-
+        self.original_array_length = 2048
 
     def transform_to_zarr(self, timestep: int) -> list:
         """
@@ -134,7 +132,6 @@ class NCAR_Dataset(Dataset):
         cubes = write_utils.flatten_3d_list(cubes)
 
         return cubes
-
 
     def _prepare_NCAR_NetCDF(self, timestep: int):
         """
@@ -177,7 +174,6 @@ class NCAR_Dataset(Dataset):
         smaller_groups, range_list = write_utils.split_zarr_group(merged_velocity, self.desired_zarr_array_length, dims)
 
         return smaller_groups, range_list
-
 
     def _get_data_cube_side(self, data_xarray: xr.Dataset) -> int:
         """
