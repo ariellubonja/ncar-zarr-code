@@ -254,6 +254,13 @@ def get_512_chunk_destinations(dest_folder_name, write_type, timestep_nr, array_
 
 
 def write_to_disk(q):
+    """
+    Spawn threads to write Zarr cubes to disk. Do not use Dask for this as seems to cause
+    worse performance than Threads
+
+    Args:
+        q (Queue): Queue of jobs
+    """
     while True:
         try:
             chunk, dest_groupname, encoding = q.get(timeout=10)  # Adjust timeout as necessary
@@ -262,9 +269,9 @@ def write_to_disk(q):
             chunk.to_zarr(store=dest_groupname, mode="w", encoding=encoding)
             print(f"Finished writing to {dest_groupname}.")
         except queue.Empty:
-            break
-        finally:
-            q.task_done()
+            break  # Break the loop if no items are left in the queue
+        # finally: # I think this is too many task_done() calls
+        #     q.task_done()
 
 
 def get_sharding_queue():
