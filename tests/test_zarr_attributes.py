@@ -8,9 +8,8 @@ from src.dataset import NCAR_Dataset
 
 # TODO Use parameterize to generate tests for each item in the queue
 class VerifyNCARZarrAttributes(unittest.TestCase):
-    def __init__(self):
-        super().__init__()
-        with open('config.yaml', 'r') as file:
+    def setUp(self):
+        with open('tests/config.yaml', 'r') as file:
             self.config = yaml.safe_load(file)
 
         # Initialize NCAR_Dataset High Rate
@@ -35,7 +34,7 @@ class VerifyNCARZarrAttributes(unittest.TestCase):
             ),
             NCAR_Dataset(
                 name='sabl2048a',
-                location_path=self.config['NCAR_low_rate_path'],
+                location_path=self.config['NCAR_low_rate_path'][0],  # List of 1 element,
                 desired_zarr_chunk_size=self.config['desired_zarr_chunk_length'],
                 desired_zarr_array_length=self.config['desired_zarr_chunk_length'],
                 prod_or_backup=self.config['prod_or_backup'],
