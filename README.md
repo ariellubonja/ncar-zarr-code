@@ -13,8 +13,8 @@ Command-Line Arguments:
 - -p or --path: Path to the location of the data file (required). Specify individual filenames for each timestep, not the directory.
 - -zc or --zarr_chunk_size: Zarr chunk size. Defaults to 64.
 - --desired_cube_side: Desired side length of the 3D data cube. Defaults to 512.
-- --zarr_encoding: Boolean flag to enable custom Zarr encoding. Currently not implemented. Defaults to True.
 - --distribution: Type of distribution - "prod" for production or "back" for backup. Defaults to "prod".
+[//]: # (- --zarr_encoding: Boolean flag to enable custom Zarr encoding. Currently not implemented. Defaults to True.)
 
 
 Example Command:
@@ -26,7 +26,7 @@ Example Command:
 
 - Input must be [Xarray-compatible](https://docs.xarray.dev/en/stable/generated/xarray.Dataset.html)
 
-- The script currently does not implement custom Zarr encoding (`--zarr_encoding` flag). Please edit `main.py` to modify encoding parameters.
+- The script currently does not implement a custom Zarr encoding choice. It currently uses `Compression=None`. Please edit `dataset.py` to modify encoding parameters.
 
 - The script reads the Timestep from the input file name 
 

@@ -20,16 +20,13 @@ class Dataset(ABC):
     ----------
     name : str
         The name of the dataset
-    location_paths : (str)
-        The path where the dataset's raw (non-Zarr-ed) data is located
-    zarr_chunk_size : int
+    location_path : (str)
+        Path to the specific Xarray-compatible file to be Zarrified and distributed to FileDB. File should belong to
+        one timestep of the data
+    desired_zarr_chunk_size : int
         The chunk size to be used when writing to Zarr
-    desired_cube_side : int
+    desired_zarr_array_length : int
         The desired side length of the 3D data cube represented by each Zarr Group
-    encoding : str
-        Dimensions, Compression algorithm, and other parameters passed as-is to xarray.to_zarr()
-    timestep : int
-        Timestep of the Dataset to be currently processed
 
     ...
 
@@ -43,17 +40,30 @@ class Dataset(ABC):
         Distributes the dataset to FileDB using Ryan Hausen's node_assignment() node coloring alg.
     """
 
-    def __init__(self, name, location_path, zarr_chunk_size, desired_cube_side, encoding):
+    def __init__(self, name, location_path, desired_zarr_chunk_size, desired_zarr_array_length, prod_or_backup):
         self.name = name
         self.location_path = location_path
-        self.zarr_chunk_size = zarr_chunk_size
-        self.desired_cube_side = desired_cube_side
-        self.encoding = encoding
-        self.array_cube_side = None  # Must be populated by transform_to_zarr()
+        self.desired_zarr_chunk_size = desired_zarr_chunk_size
+        self.desired_zarr_array_length = desired_zarr_array_length
+        self.prod_or_backup = prod_or_backup
+        self.original_array_length = None  # Must be populated by subclass method
         self.timestep = write_utils.extract_timestep_from_filename(self.location_path)
+
+        # TODO Generalize this. It's hard-coded for NCAR
+        self.encoding = {
+            "velocity": dict(chunks=(desired_zarr_chunk_size, desired_zarr_chunk_size, desired_zarr_chunk_size, 3),
+                             compressor=None),
+            "pressure": dict(chunks=(desired_zarr_chunk_size, desired_zarr_chunk_size, desired_zarr_chunk_size, 1),
+                             compressor=None),
+            "temperature": dict(chunks=(desired_zarr_chunk_size, desired_zarr_chunk_size, desired_zarr_chunk_size, 1),
+                                compressor=None),
+            "energy": dict(chunks=(desired_zarr_chunk_size, desired_zarr_chunk_size, desired_zarr_chunk_size, 1),
+                           compressor=None)}
+
 
     def _get_data_cube_side(self, data_xarray):
         raise NotImplementedError('TODO Implement reading the length of the 3D cube side from path')
+
 
     @abstractmethod
     def transform_to_zarr(self):
@@ -63,17 +73,27 @@ class Dataset(ABC):
         """
         raise NotImplementedError("Subclasses must implement this method")
 
+
     def distribute_to_filedb(self, lazy_zarr_cubes, PROD_OR_BACKUP='prod', NUM_THREADS=34):
+        '''
+        Distribute the dataset to FileDB using Ryan Hausen's node_assignment() node coloring alg.
+
+        Args:
+            lazy_zarr_cubes: List of lists of zarr groups that have not been evaluated yet (lazy)
+            PROD_OR_BACKUP: Whether you want to write a production or backup copy
+            NUM_THREADS (int): Number of threads to use when writing to disk. Currently 34 to match nr. of disks on
+                FileDB
+        '''
+        # TODO Implement backup copy
         q = queue.Queue()
 
-        dests = write_utils.get_512_chunk_destinations(self.name, PROD_OR_BACKUP, self.timestep,
-                                                       self.array_cube_side)
+        dests = write_utils.get_zarr_array_destinations(self.name, PROD_OR_BACKUP, self.timestep,
+                                                        self.original_array_length)
 
         # Populate the queue with Write to FileDB tasks
         for i in range(len(dests)):
             q.put((lazy_zarr_cubes[i], dests[i], self.encoding))
 
-        # TODO Important! Fix raise ValueError('task_done() called too many times')
         threads = []  # Create threads and start them
         for _ in range(NUM_THREADS):
             t = threading.Thread(target=write_utils.write_to_disk, args=(q,))
@@ -106,15 +126,17 @@ class NCAR_Dataset(Dataset):
         """
         Prepare data for writing to FileDB. This includes:
             - Merging velocity components
-            - Splitting into smaller chunks (64^3)
+            - Splitting into smaller chunks (64^3 or desired_zarr_chunk_size^3)
             - Unabbreviating variable names
-            - Splitting 2048^3 arrays into 512^3 chunks
+            - Splitting 2048^3 arrays into 512^3 chunks (original_array_length -> desired_zarr_array_length)
 
         This function deals with the intricaties of the NCAR dataset. It is not meant to be used for other datasets.
         """
         # Open the dataset using xarray
-        data_xr = xr.open_dataset(self.location_path, chunks={'nnz': self.zarr_chunk_size, 'nny': self.zarr_chunk_size,
-                                                              'nnx': self.zarr_chunk_size})
+        # TODO The variable names are hard-coded
+        data_xr = xr.open_dataset(self.location_path,
+                                  chunks={'nnz': self.desired_zarr_chunk_size, 'nny': self.desired_zarr_chunk_size,
+                                          'nnx': self.desired_zarr_chunk_size})
 
         assert isinstance(data_xr['e'].data, dask.array.core.Array)
 
@@ -128,18 +150,18 @@ class NCAR_Dataset(Dataset):
 
         # Group 3 velocity components together
         # Never use dask with remote network location on this!!
-        merged_velocity = write_utils.merge_velocities(transposed_ds, chunk_size_base=self.zarr_chunk_size)
+        merged_velocity = write_utils.merge_velocities(transposed_ds, chunk_size_base=self.desired_zarr_chunk_size)
 
+        # TODO this is also hard-coded
         merged_velocity = merged_velocity.rename({'e': 'energy', 't': 'temperature', 'p': 'pressure'})
 
         dims = [dim for dim in data_xr.dims]
         dims.reverse()  # use (nnz, nny, nnx) instead of (nnx, nny, nnz)
 
         # Split 2048^3 into smaller 512^3 arrays
-        smaller_groups, range_list = write_utils.split_zarr_group(merged_velocity, self.desired_cube_side, dims)
+        smaller_groups, range_list = write_utils.split_zarr_group(merged_velocity, self.desired_zarr_array_length, dims)
 
         return smaller_groups, range_list
-
 
     def _get_data_cube_side(self, data_xarray: xr.Dataset) -> int:
         """

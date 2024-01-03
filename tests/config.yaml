@@ -1,6 +1,23 @@
+# Config file for tests
+# Use this to easily adjust the test parameters based on how the data is written
+
+# The path to the original data (in this case NCAR .netcdf) is stored
 original_data_paths:
   #  low rate
   - /home/idies/workspace/turb/data02_02/ncar-low-rate-fixed-dt
   #  high rate
   - /home/idies/workspace/turb/data02_02/ncar-high-rate-fixed-dt/
   - /home/idies/workspace/turb/data02_03/ncar-high-rate-fixed-dt/
+
+
+# The script splits the dataset into smaller zarr arrays to optimize read speed
+# It is adjustable by the `desired_cube_side` attribute on main.py
+# You also need to modify it here if a value other than the default 512 is used
+desired_zarr_array_length: 512
+# How big the cube side should be in each zarr file
+desired_zarr_chunk_length: 64
+desired_zarr_compressor: None
+
+
+dataset_name: sabl2048a
+prod_or_backup: prod

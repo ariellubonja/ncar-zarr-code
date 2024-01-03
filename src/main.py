@@ -32,18 +32,12 @@ if __name__ == "__main__":
     desired_cube_side = args.desired_cube_side
     PROD_OR_BACKUP = args.distribution
 
-    ENCODING = {
-        "velocity": dict(chunks=(ZARR_CHUNK_SIDE, ZARR_CHUNK_SIDE, ZARR_CHUNK_SIDE, 3), compressor=None),
-        "pressure": dict(chunks=(ZARR_CHUNK_SIDE, ZARR_CHUNK_SIDE, ZARR_CHUNK_SIDE, 1), compressor=None),
-        "temperature": dict(chunks=(ZARR_CHUNK_SIDE, ZARR_CHUNK_SIDE, ZARR_CHUNK_SIDE, 1), compressor=None),
-        "energy": dict(chunks=(ZARR_CHUNK_SIDE, ZARR_CHUNK_SIDE, ZARR_CHUNK_SIDE, 1), compressor=None)
-    }
 
     ncar_dataset = NCAR_Dataset(name=DATASET_NAME,
                                 location_path=LOCATION_PATH,
-                                zarr_chunk_size=ZARR_CHUNK_SIDE,
-                                desired_cube_side=desired_cube_side,
-                                encoding=ENCODING)
+                                desired_zarr_chunk_size=ZARR_CHUNK_SIDE,
+                                desired_zarr_array_length=desired_cube_side,
+                                prod_or_backup=PROD_OR_BACKUP)
 
     lazy_zarr_cubes = ncar_dataset.transform_to_zarr()
     ncar_dataset.distribute_to_filedb(lazy_zarr_cubes, PROD_OR_BACKUP)
