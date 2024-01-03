@@ -46,13 +46,13 @@ class Dataset(ABC):
                  start_timestep, end_timestep):
         self.name = name
         self.location_path = location_path  # List of paths
-        # self.timesteps = [write_utils.extract_timestep_from_filename(path) for path in location_path]
         self.desired_zarr_chunk_size = desired_zarr_chunk_size
         self.desired_zarr_array_length = desired_zarr_array_length
         self.prod_or_backup = prod_or_backup
         self.original_array_length = None  # Must be populated by subclass method
         self.start_timestep = start_timestep
         self.end_timestep = end_timestep
+        # TODO add something that reads end_timestep from folder instead of having to be specified
 
         # TODO Generalize this. It's hard-coded for NCAR
         self.encoding = {

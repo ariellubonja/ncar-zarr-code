@@ -191,11 +191,12 @@ def search_dict_by_value(dictionary, value):
     return None  # Value not found in the dictionary
 
 
-def get_zarr_array_destinations(dataset: Dataset):
+def get_zarr_array_destinations(dataset: Dataset, timestep: int):
     """
     Destinations of all Zarr arrays pertaining to how they are distributed on FileDB, according to Node Coloring
     Args:
         dataset (Dataset): dataset object filled with attributes of Dataset class
+        timestep (int): timestep of the dataset to process
 
     Returns:
         list[str]: List of destination paths of Zarr arrays
@@ -236,7 +237,7 @@ def get_zarr_array_destinations(dataset: Dataset):
 
         outer_dim.append(mid_dim)
 
-    chunk_morton_mapping = get_chunk_morton_mapping(range_list, dest_folder_name)
+    chunk_morton_mapping = get_chunk_morton_mapping(range_list, dataset.name)
     flattened_node_assgn = flatten_3d_list(node_assignment(4))
 
     dests = []
@@ -247,8 +248,8 @@ def get_zarr_array_destinations(dataset: Dataset):
         min_coord = [a[0] for a in range_list[i]]
         max_coord = [a[1] - 1 for a in range_list[i]]
 
-        morton = (morton_pack(array_cube_side, min_coord[2], min_coord[1], min_coord[0]),
-                  morton_pack(array_cube_side, max_coord[2], max_coord[1], max_coord[0]))
+        morton = (morton_pack(dataset.original_array_length, min_coord[2], min_coord[1], min_coord[0]),
+                  morton_pack(dataset.original_array_length, max_coord[2], max_coord[1], max_coord[0]))
 
         chunk_name = search_dict_by_value(chunk_morton_mapping, morton)
 
@@ -257,7 +258,7 @@ def get_zarr_array_destinations(dataset: Dataset):
         filedb_index = flattened_node_assgn[idx - 1] - 1
 
         destination = os.path.join(folders[filedb_index],
-                                   dest_folder_name + str(idx).zfill(2) + "_" + str(timestep_nr).zfill(3) + ".zarr")
+                                   dataset.name + str(idx).zfill(2) + "_" + str(timestep).zfill(3) + ".zarr")
 
         dests.append(destination)
 
