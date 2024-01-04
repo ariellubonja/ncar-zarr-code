@@ -3,18 +3,82 @@ import zarr
 from dask.array.utils import assert_eq
 import dask.array as da
 from parameterized import parameterized
+import yaml
 
 from src.utils.write_utils import get_sharding_queue
+from src.dataset import NCAR_Dataset
+from src.utils import write_utils
 
-# TODO Read path from config file
 
+# TODO tons of duplicated code with test_zarr_attributes.py
 class VerifyZarrDataCorrectness(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        with open('tests/config.yaml', 'r') as file:
+            cls.config = yaml.safe_load(file)
+
+    def setUp(self):
+        # Set up individual test instance with datasets
+        self.ncar_datasets = {
+            "NCAR-High-Rate-1": NCAR_Dataset(
+                name='sabl2048b',
+                location_path=self.config['NCAR_high_rate_paths'][0],
+                desired_zarr_chunk_size=self.config['desired_zarr_chunk_length'],
+                desired_zarr_array_length=self.config['desired_zarr_chunk_length'],
+                prod_or_backup=self.config['prod_or_backup'],
+                start_timestep=0,
+                end_timestep=49
+            ),
+            "NCAR-High-Rate-2": NCAR_Dataset(
+                name='sabl2048b',
+                location_path=self.config['NCAR_high_rate_paths'][1],
+                desired_zarr_chunk_size=self.config['desired_zarr_chunk_length'],
+                desired_zarr_array_length=self.config['desired_zarr_chunk_length'],
+                prod_or_backup=self.config['prod_or_backup'],
+                start_timestep=50,
+                end_timestep=99
+            ),
+            "NCAR-Low-Rate": NCAR_Dataset(
+                name='sabl2048a',
+                location_path=self.config['NCAR_low_rate_path'][0],
+                desired_zarr_chunk_size=self.config['desired_zarr_chunk_length'],
+                desired_zarr_array_length=self.config['desired_zarr_chunk_length'],
+                prod_or_backup=self.config['prod_or_backup'],
+                start_timestep=0,
+                end_timestep=19
+            )
+        }
+
+    @parameterized.expand([
+        ("NCAR-High-Rate-1", 0, 49),
+        ("NCAR-High-Rate-2", 50, 99),
+        ("NCAR-Low-Rate", 0, 19),
+    ])
+    def test_all_timesteps(self, dataset_name, start_timestep, end_timestep):
+        dataset = self.ncar_datasets[dataset_name]
+        for timestep in range(start_timestep, end_timestep + 1):
+            lazy_zarr_cubes = dataset.transform_to_zarr(timestep)  # Still Original data, before write
+            # Where Zarr data was written
+            destination_paths = write_utils.get_zarr_array_destinations(dataset, timestep)
+
+            # TODO Parameterized?
+            for original_data_cube, written_zarr_cube in zip(lazy_zarr_cubes, destination_paths):
+                with self.subTest(timestep=timestep):
+                    self.verify_zarr_group_data(original_data_cube, written_zarr_cube)
 
     @parameterized.expand(get_sharding_queue())
-    def test_verify_512_cube_data(self, original_512, zarr_512_path):
-        zarr_512 = zarr.open_group(zarr_512_path, mode='r')
-        print("Comparing original 512^3 with ", zarr_512_path)
-        for var in original_512.data_vars:
-            assert_eq(original_512[var].data, da.from_zarr(zarr_512[var]))
+    def verify_zarr_group_data(self, original_subarray, zarr_group_path):
+        '''
+        Verify correctness of data contained in each zarr group against
+        the original data file (NCAR NetCDF)
+
+        Args:
+            original_subarray (xarray.Dataset): (Sub)Array of original data that was written as zarr to zar_group_path
+            zarr_group_path (str): Location of the sub-chunked data as a Zarr Group
+        '''
+        zarr_512 = zarr.open_group(zarr_group_path, mode='r')
+        print("Comparing original 512^3 with ", zarr_group_path)
+        for var in original_subarray.data_vars:
+            assert_eq(original_subarray[var].data, da.from_zarr(zarr_512[var]))
             print(var, " OK")
 
