@@ -5,6 +5,7 @@ from parameterized import parameterized
 
 from src.dataset import NCAR_Dataset
 
+
 config = {}
 
 
@@ -23,6 +24,8 @@ def generate_timestep_tests():
 
 
 class VerifyNCARZarrAttributes(unittest.TestCase):
+    # Cannot have setUp or setupClass because they don't work with Parameterized
+
     @parameterized.expand(generate_timestep_tests)
     def test_individual_timestep(self, dataset_name, timestep):
         dataset_config = config['datasets'][dataset_name]
