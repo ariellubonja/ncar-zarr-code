@@ -13,7 +13,7 @@ def generate_timestep_tests():
     # Access the global configuration variable
     global config
     with open('tests/config.yaml', 'r') as file:
-            config = yaml.safe_load(file)
+        config = yaml.safe_load(file)
 
     test_params = []
     for dataset_name, dataset_config in config['datasets'].items():
@@ -23,21 +23,16 @@ def generate_timestep_tests():
 
 
 class VerifyNCARZarrAttributes(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        with open('tests/config.yaml', 'r') as file:
-            cls.config = yaml.safe_load(file)
-
     @parameterized.expand(generate_timestep_tests)
     def test_individual_timestep(self, dataset_name, timestep):
         dataset_config = config['datasets'][dataset_name]
-        zarr_config = config['zarr_settings']
+        write_config = config['write_settings']
         dataset = NCAR_Dataset(
             name=dataset_config['name'],
             location_path=dataset_config['location_path'],
-            desired_zarr_chunk_size=zarr_config['desired_zarr_chunk_length'],
-            desired_zarr_array_length=zarr_config['desired_zarr_chunk_length'],
-            prod_or_backup=config['prod_or_backup'],
+            desired_zarr_chunk_size=write_config['desired_zarr_chunk_length'],
+            desired_zarr_array_length=write_config['desired_zarr_chunk_length'],
+            prod_or_backup=write_config['prod_or_backup'],
             start_timestep=dataset_config['start_timestep'],
             end_timestep=dataset_config['end_timestep']
         )
@@ -57,23 +52,27 @@ class VerifyNCARZarrAttributes(unittest.TestCase):
     # TODO get Zarr group size from config.yaml
     def verify_zarr_array_dims(self, zarr_512, zarr_512_path):
         """
-        Verify that the cube dimensions are as expected. Should be (512, 512, 512, 3) for velocity, (512, 512, 512, 1) otherwise
+        Verify that the cube dimensions are as expected. Should be (512, 512, 512, 3) for velocity, (512, 512, 512, 1)
+         otherwise
         """
         for var in zarr_512.array_keys():
             expected_shape = (512, 512, 512, 3) if var == "velocity" else (512, 512, 512, 1)
             self.assertEqual(zarr_512[var].shape, expected_shape)
 
-        # print("Cube dimension = (512, 512, 512, x),  for all variables in ", zarr_512_path)
+        if config['verbose']:
+            print("Cube dimension = (512, 512, 512, x),  for all variables in ", zarr_512_path)
 
     def verify_zarr_chunk_sizes(self, zarr_512, zarr_512_path):
         for var in zarr_512.array_keys():
             expected_chunksize = (64, 64, 64, 3) if var == "velocity" else (64, 64, 64, 1)
             self.assertEqual(zarr_512[var].chunks, expected_chunksize)
 
-        # print("Chunk sizes = (64, 64, 64, x),  for all variables in ", zarr_512_path)
+        if config['verbose']:
+            print("Chunk sizes = (64, 64, 64, x),  for all variables in ", zarr_512_path)
 
     def verify_zarr_compression(self, zarr_512, zarr_512_path):
         for var in zarr_512.array_keys():
             self.assertIsNone(zarr_512[var].compressor)  # TODO get from config.yaml
 
-        # print("Compression is None for all variables in ", zarr_512_path)
+        if config['verbose']:
+            print("Compression is None for all variables in ", zarr_512_path)

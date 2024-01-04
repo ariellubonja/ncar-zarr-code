@@ -23,10 +23,12 @@ datasets:
     end_timestep: 19
 
 
-zarr_settings:
+write_settings:
   desired_zarr_array_length: 512
   desired_zarr_chunk_length: 64
   desired_zarr_compressor: None
-  
-  
-prod_or_backup: prod
+  prod_or_backup: prod
+
+
+general_settings:
+  verbose: True
