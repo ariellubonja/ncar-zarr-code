@@ -1,48 +1,58 @@
 import unittest
 import zarr
 import yaml
+from parameterized import parameterized
 
 from src.utils import write_utils
 from src.dataset import NCAR_Dataset
 
 
-# TODO Use parameterize to generate tests for each item in the queue
 class VerifyNCARZarrAttributes(unittest.TestCase):
-    def setUp(self):
+    def setUpClass(cls):
         with open('tests/config.yaml', 'r') as file:
-            self.config = yaml.safe_load(file)
+            cls.config = yaml.safe_load(file)
 
         # Initialize NCAR_Dataset High Rate
-        self.ncar_datasets = [
+        cls.ncar_datasets = [
             NCAR_Dataset(
                 name='sabl2048b',
-                location_path=self.config['NCAR_high_rate_paths'][0],
-                desired_zarr_chunk_size=self.config['desired_zarr_chunk_length'],
-                desired_zarr_array_length=self.config['desired_zarr_chunk_length'],
-                prod_or_backup=self.config['prod_or_backup'],
+                location_path=cls.config['NCAR_high_rate_paths'][0],
+                desired_zarr_chunk_size=cls.config['desired_zarr_chunk_length'],
+                desired_zarr_array_length=cls.config['desired_zarr_chunk_length'],
+                prod_or_backup=cls.config['prod_or_backup'],
                 start_timestep=0,
                 end_timestep=49
             ),
             NCAR_Dataset(
                 name='sabl2048b',
-                location_path=self.config['NCAR_high_rate_paths'][1],  # Split across 2 dirs
-                desired_zarr_chunk_size=self.config['desired_zarr_chunk_length'],
-                desired_zarr_array_length=self.config['desired_zarr_chunk_length'],
-                prod_or_backup=self.config['prod_or_backup'],
+                location_path=cls.config['NCAR_high_rate_paths'][1],  # Split across 2 dirs
+                desired_zarr_chunk_size=cls.config['desired_zarr_chunk_length'],
+                desired_zarr_array_length=cls.config['desired_zarr_chunk_length'],
+                prod_or_backup=cls.config['prod_or_backup'],
                 start_timestep=50,
                 end_timestep=99
             ),
             NCAR_Dataset(
                 name='sabl2048a',
-                location_path=self.config['NCAR_low_rate_path'][0],  # List of 1 element,
-                desired_zarr_chunk_size=self.config['desired_zarr_chunk_length'],
-                desired_zarr_array_length=self.config['desired_zarr_chunk_length'],
-                prod_or_backup=self.config['prod_or_backup'],
+                location_path=cls.config['NCAR_low_rate_path'][0],  # List of 1 element,
+                desired_zarr_chunk_size=cls.config['desired_zarr_chunk_length'],
+                desired_zarr_array_length=cls.config['desired_zarr_chunk_length'],
+                prod_or_backup=cls.config['prod_or_backup'],
                 start_timestep=0,
                 end_timestep=19
             )
         ]
 
+    @classmethod
+    def generate_test_cases(cls):
+        test_cases = []
+        for dataset in cls.ncar_datasets:
+            # Using dataset name and timestep range as the label and parameters
+            label = f"{dataset.name}_{dataset.start_timestep}_to_{dataset.end_timestep}"
+            test_cases.append((label, dataset.start_timestep, dataset.end_timestep))
+        return test_cases
+
+    @parameterized.expand(generate_test_cases())
     def test_all_timesteps(self):
         for dataset in self.ncar_datasets:
             for timestep in range(dataset.start_timestep, dataset.end_timestep + 1):
