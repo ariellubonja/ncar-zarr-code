@@ -22,9 +22,11 @@ datasets:
     start_timestep: 0
     end_timestep: 19
 
-# General settings that apply to all datasets
-general_settings:
+
+zarr_settings:
   desired_zarr_array_length: 512
   desired_zarr_chunk_length: 64
   desired_zarr_compressor: None
-  prod_or_backup: prod
+  
+  
+prod_or_backup: prod

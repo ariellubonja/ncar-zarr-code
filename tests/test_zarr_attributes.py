@@ -12,6 +12,8 @@ config = {}
 def generate_timestep_tests():
     # Access the global configuration variable
     global config
+    with open('tests/config.yaml', 'r') as file:
+            config = yaml.safe_load(file)
 
     test_params = []
     for dataset_name, dataset_config in config['datasets'].items():
@@ -29,12 +31,13 @@ class VerifyNCARZarrAttributes(unittest.TestCase):
     @parameterized.expand(generate_timestep_tests)
     def test_individual_timestep(self, dataset_name, timestep):
         dataset_config = config['datasets'][dataset_name]
+        zarr_config = config['zarr_settings']
         dataset = NCAR_Dataset(
             name=dataset_config['name'],
             location_path=dataset_config['location_path'],
-            desired_zarr_chunk_size=dataset_config['desired_zarr_chunk_length'],
-            desired_zarr_array_length=dataset_config['desired_zarr_chunk_length'],
-            prod_or_backup=dataset_config['prod_or_backup'],
+            desired_zarr_chunk_size=zarr_config['desired_zarr_chunk_length'],
+            desired_zarr_array_length=zarr_config['desired_zarr_chunk_length'],
+            prod_or_backup=config['prod_or_backup'],
             start_timestep=dataset_config['start_timestep'],
             end_timestep=dataset_config['end_timestep']
         )
