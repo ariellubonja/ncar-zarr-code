@@ -8,55 +8,57 @@ from src.dataset import NCAR_Dataset
 
 
 class VerifyNCARZarrAttributes(unittest.TestCase):
+    @classmethod
     def setUpClass(cls):
         with open('tests/config.yaml', 'r') as file:
             cls.config = yaml.safe_load(file)
 
-        # Initialize NCAR_Dataset High Rate
-        cls.ncar_datasets = [
-            NCAR_Dataset(
+    def setUp(self):
+        # Set up individual test instance with datasets
+        self.ncar_datasets = {
+            "NCAR-High-Rate-1": NCAR_Dataset(
                 name='sabl2048b',
-                location_path=cls.config['NCAR_high_rate_paths'][0],
-                desired_zarr_chunk_size=cls.config['desired_zarr_chunk_length'],
-                desired_zarr_array_length=cls.config['desired_zarr_chunk_length'],
-                prod_or_backup=cls.config['prod_or_backup'],
+                location_path=self.config['NCAR_high_rate_paths'][0],
+                desired_zarr_chunk_size=self.config['desired_zarr_chunk_length'],
+                desired_zarr_array_length=self.config['desired_zarr_chunk_length'],
+                prod_or_backup=self.config['prod_or_backup'],
                 start_timestep=0,
                 end_timestep=49
             ),
-            NCAR_Dataset(
+            "NCAR-High-Rate-2": NCAR_Dataset(
                 name='sabl2048b',
-                location_path=cls.config['NCAR_high_rate_paths'][1],  # Split across 2 dirs
-                desired_zarr_chunk_size=cls.config['desired_zarr_chunk_length'],
-                desired_zarr_array_length=cls.config['desired_zarr_chunk_length'],
-                prod_or_backup=cls.config['prod_or_backup'],
+                location_path=self.config['NCAR_high_rate_paths'][1],
+                desired_zarr_chunk_size=self.config['desired_zarr_chunk_length'],
+                desired_zarr_array_length=self.config['desired_zarr_chunk_length'],
+                prod_or_backup=self.config['prod_or_backup'],
                 start_timestep=50,
                 end_timestep=99
             ),
-            NCAR_Dataset(
+            "NCAR-Low-Rate": NCAR_Dataset(
                 name='sabl2048a',
-                location_path=cls.config['NCAR_low_rate_path'][0],  # List of 1 element,
-                desired_zarr_chunk_size=cls.config['desired_zarr_chunk_length'],
-                desired_zarr_array_length=cls.config['desired_zarr_chunk_length'],
-                prod_or_backup=cls.config['prod_or_backup'],
+                location_path=self.config['NCAR_low_rate_path'][0],
+                desired_zarr_chunk_size=self.config['desired_zarr_chunk_length'],
+                desired_zarr_array_length=self.config['desired_zarr_chunk_length'],
+                prod_or_backup=self.config['prod_or_backup'],
                 start_timestep=0,
                 end_timestep=19
             )
-        ]
+        }
 
     @parameterized.expand([
         ("NCAR-High-Rate-1", 0, 49),
         ("NCAR-High-Rate-2", 50, 99),
         ("NCAR-Low-Rate", 0, 19),
     ])
-    def test_all_timesteps(self):
-        for dataset in self.ncar_datasets:
-            for timestep in range(dataset.start_timestep, dataset.end_timestep + 1):
-                lazy_zarr_cubes = dataset.transform_to_zarr(timestep)
-                destination_paths = write_utils.get_zarr_array_destinations(dataset, timestep)
+    def test_all_timesteps(self, dataset_name, start_timestep, end_timestep):
+        dataset = self.ncar_datasets[dataset_name]
+        for timestep in range(start_timestep, end_timestep + 1):
+            lazy_zarr_cubes = dataset.transform_to_zarr(timestep)
+            destination_paths = write_utils.get_zarr_array_destinations(dataset, timestep)
 
-                for original_512, zarr_512_path in zip(lazy_zarr_cubes, destination_paths):
-                    with self.subTest(timestep=timestep):
-                        self.run_tests_for_single_file(zarr_512_path)
+            for original_512, zarr_512_path in zip(lazy_zarr_cubes, destination_paths):
+                with self.subTest(timestep=timestep):
+                    self.run_tests_for_single_file(zarr_512_path)
 
     def run_tests_for_single_file(self, zarr_512_path):
         zarr_512 = zarr.open_group(zarr_512_path, mode='r')
