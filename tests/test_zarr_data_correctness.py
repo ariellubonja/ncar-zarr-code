@@ -7,7 +7,6 @@ import os
 
 
 from src.dataset import NCAR_Dataset
-from src.utils import write_utils
 
 
 # TODO tons of duplicated code with test_zarr_attributes.py
@@ -63,7 +62,7 @@ class VerifyZarrDataCorrectness(unittest.TestCase):
         for timestep in range(self.start_timestep, self.end_timestep + 1):
             lazy_zarr_cubes = dataset.transform_to_zarr(timestep)  # Still Original data, before write
             # Where Zarr data was written
-            destination_paths = write_utils.get_zarr_array_destinations(dataset, timestep)
+            destination_paths = dataset.get_zarr_array_destinations(timestep)
 
             # TODO Parameterized?
             for original_data_cube, written_zarr_cube in zip(lazy_zarr_cubes, destination_paths):

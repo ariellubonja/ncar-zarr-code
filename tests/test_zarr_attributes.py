@@ -3,7 +3,6 @@ import zarr
 import yaml
 from parameterized import parameterized
 
-from src.utils import write_utils
 from src.dataset import NCAR_Dataset
 
 
@@ -53,7 +52,7 @@ class VerifyNCARZarrAttributes(unittest.TestCase):
     def test_all_timesteps(self, dataset_name, start_timestep, end_timestep):
         dataset = self.ncar_datasets[dataset_name]
         for timestep in range(start_timestep, end_timestep + 1):
-            destination_paths = write_utils.get_zarr_array_destinations(dataset, timestep)
+            destination_paths = dataset.get_zarr_array_destinations(timestep)
 
             for zarr_512_path in destination_paths:
                 with self.subTest(timestep=timestep):

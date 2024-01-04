@@ -101,7 +101,7 @@ class Dataset(ABC):
 
             q = queue.Queue()
 
-            dests = write_utils.get_zarr_array_destinations(self)
+            dests = self.get_zarr_array_destinations(timestep)
 
             # Populate the queue with Write to FileDB tasks
             for i in range(len(dests)):
@@ -203,7 +203,6 @@ class NCAR_Dataset(Dataset):
         """
         Destinations of all Zarr arrays pertaining to how they are distributed on FileDB, according to Node Coloring
         Args:
-            dataset (Dataset): dataset object filled with attributes of Dataset class
             timestep (int): timestep of the dataset to process
 
         Returns:
@@ -223,26 +222,6 @@ class NCAR_Dataset(Dataset):
             folders[i] += self.name + "_" + str(i + 1).zfill(2) + "_" + self.prod_or_backup + "/"
 
         range_list = []  # Where chunks start and end. Needed for Mike's code to find correct chunks to access
-        smaller_size = 512
-        outer_dim = []
-
-        for i in range(4):
-            mid_dim = []
-            for j in range(4):
-                inner_dim = []
-
-                for k in range(4):
-                    a = []
-
-                    a.append([k * smaller_size, (k + 1) * smaller_size])
-                    a.append([j * smaller_size, (j + 1) * smaller_size])
-                    a.append([i * smaller_size, (i + 1) * smaller_size])
-
-                    range_list.append(a)
-
-                mid_dim.append(inner_dim)
-
-            outer_dim.append(mid_dim)
 
         chunk_morton_mapping = write_utils.get_chunk_morton_mapping(range_list, self.name)
         flattened_node_assgn = write_utils.flatten_3d_list(write_utils.node_assignment(4))
@@ -250,8 +229,6 @@ class NCAR_Dataset(Dataset):
         dests = []
 
         for i in range(len(range_list)):
-            #     for j in range(4):
-            #         for k in range(4):
             min_coord = [a[0] for a in range_list[i]]
             max_coord = [a[1] - 1 for a in range_list[i]]
 

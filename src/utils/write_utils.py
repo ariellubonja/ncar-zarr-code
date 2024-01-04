@@ -210,7 +210,7 @@ def write_to_disk(q):
         #     q.task_done()
 
 
-def get_sharding_queue():
+def get_sharding_queue(dataset):
     """
     NetCDF data is sharded into smaller chunks, which are distributed round-robin.
     This method gathers these shards' paths and adds them to queue to compare their data with the original.
@@ -222,6 +222,7 @@ def get_sharding_queue():
     ]
 
     queue = []
+    # TODO update with config.yaml
     array_cube_side = 2048
     dest_folder_name = "sabl2048b"
     write_type = "prod"
@@ -233,10 +234,10 @@ def get_sharding_queue():
         raw_ncar_folder_path = raw_ncar_folder_paths[1]
 
     file_path = os.path.join(raw_ncar_folder_path, f"jhd.{str(timestep_nr).zfill(3)}.nc")
-    cubes, _ = prepare_data(file_path)
+    cubes, _ = dataset.prepare_data(file_path)
     cubes = flatten_3d_list(cubes)
 
-    dests = get_zarr_array_destinations(dest_folder_name, write_type, timestep_nr, array_cube_side)
+    dests = dataset.get_zarr_array_destinations(dest_folder_name, write_type, timestep_nr, array_cube_side)
 
     for i in range(len(dests)):
         queue.append((cubes[i], dests[i]))
