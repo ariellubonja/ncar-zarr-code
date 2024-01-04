@@ -4,24 +4,12 @@ from dask.array.utils import assert_eq
 import dask.array as da
 from parameterized import parameterized
 import yaml
-import argparse
+import os
+
 
 from src.utils.write_utils import get_sharding_queue
 from src.dataset import NCAR_Dataset
 from src.utils import write_utils
-
-
-parser = argparse.ArgumentParser(description="Run Zarr data correctness tests")
-parser.add_argument("--dataset", type=str, required=True, help="Dataset name",
-                    choices=["NCAR-High-Rate-1", "NCAR-High-Rate-2", "NCAR-Low-Rate"])
-parser.add_argument("--start_timestep", type=int, required=True, help="Start timestep for testing")
-parser.add_argument("--end_timestep", type=int, required=True, help="End timestep for testing (inclusive)")
-args = parser.parse_args()
-
-# Store arguments in global variables
-DATASET = args.dataset
-START_TIMESTEP = args.start_timestep
-END_TIMESTEP = args.end_timestep
 
 
 # TODO tons of duplicated code with test_zarr_attributes.py
@@ -30,6 +18,10 @@ class VerifyZarrDataCorrectness(unittest.TestCase):
     def setUpClass(cls):
         with open('tests/config.yaml', 'r') as file:
             cls.config = yaml.safe_load(file)
+
+        cls.dataset_name = os.environ.get('DATASET', 'NCAR_High_Rate_1')
+        cls.start_timestep = int(os.environ.get('START_TIMESTEP', 0))
+        cls.end_timestep = int(os.environ.get('END_TIMESTEP', 2))
 
     def setUp(self):
         # Set up individual test instance with datasets

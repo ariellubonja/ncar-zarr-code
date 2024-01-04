@@ -66,35 +66,40 @@ If you encounter difficulties or have specific questions about customizing the c
 
 ## Testing
 
-### Zarr Data Correctness Test
+Running Zarr Data Correctness Tests
+The VerifyZarrDataCorrectness test suite in tests/test_zarr_data_correctness.py is designed to verify the correctness of Zarr data conversion for specific datasets and timesteps. To run these tests, you need to set environment variables for specifying the dataset and timestep range.
 
-`VerifyZarrDataCorrectness` is designed to verify the correctness of the conversion of NetCDF data into Zarr files. This test manually compares the data matrices. See `test_zarr_attributes.py` for Zarr metadata and attribute tests.
+Setting Environment Variables
 
+Before running the tests, you need to set the following environment variables:
 
-#### Running the Test
-Directly run the test by navigating to the root directory of the project and run the test using the following command:
+DATASET: The name of the dataset you want to test. For example, "NCAR-High-Rate-1".
+START_TIMESTEP: The starting timestep number for testing.
+END_TIMESTEP: The ending timestep number for testing.
+You can set these variables in your terminal as follows:
 
-```
-TIMESTEP_NR=<your_timestep_nr> python -m unittest path/to/VerifyZarrDataCorrectness.py
-```
+For Linux/Mac:
 
-#### Setting the Environment Variable
+bash
+Copy code
+export DATASET="NCAR-High-Rate-1"
+export START_TIMESTEP=0
+export END_TIMESTEP=2
+For Windows:
 
-If you'd like, you can set the Environment Variable for the current terminal session.
+cmd
+Copy code
+set DATASET=NCAR-High-Rate-1
+set START_TIMESTEP=0
+set END_TIMESTEP=2
+Running the Tests
 
-Before running the test, set the `TIMESTEP_NR` environment variable to the desired timestep number. This can be done as follows:
+After setting the environment variables, run the tests using the unittest module:
 
-On Linux/Mac:
-```
-export TIMESTEP_NR=<your_timestep_number>
-```
-On Windows:
-
-```
-set TIMESTEP_NR=<your_timestep_number>
-```
-
-Replace `<your_timestep_number>` with the actual timestep number you want to test.
+bash
+Copy code
+python -m unittest tests/test_zarr_data_correctness.py
+The tests will automatically read the environment variables and run the data correctness checks for the specified dataset and timesteps.
 
 
 ### Jupyter Notebooks Description
