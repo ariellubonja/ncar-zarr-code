@@ -4,10 +4,24 @@ from dask.array.utils import assert_eq
 import dask.array as da
 from parameterized import parameterized
 import yaml
+import argparse
 
 from src.utils.write_utils import get_sharding_queue
 from src.dataset import NCAR_Dataset
 from src.utils import write_utils
+
+
+parser = argparse.ArgumentParser(description="Run Zarr data correctness tests")
+parser.add_argument("--dataset", type=str, required=True, help="Dataset name",
+                    choices=["NCAR-High-Rate-1", "NCAR-High-Rate-2", "NCAR-Low-Rate"])
+parser.add_argument("--start_timestep", type=int, required=True, help="Start timestep for testing")
+parser.add_argument("--end_timestep", type=int, required=True, help="End timestep for testing (inclusive)")
+args = parser.parse_args()
+
+# Store arguments in global variables
+DATASET = args.dataset
+START_TIMESTEP = args.start_timestep
+END_TIMESTEP = args.end_timestep
 
 
 # TODO tons of duplicated code with test_zarr_attributes.py
@@ -49,14 +63,14 @@ class VerifyZarrDataCorrectness(unittest.TestCase):
             )
         }
 
-    @parameterized.expand([
-        ("NCAR-High-Rate-1", 0, 49),
-        ("NCAR-High-Rate-2", 50, 99),
-        ("NCAR-Low-Rate", 0, 19),
-    ])
-    def test_all_timesteps(self, dataset_name, start_timestep, end_timestep):
-        dataset = self.ncar_datasets[dataset_name]
-        for timestep in range(start_timestep, end_timestep + 1):
+        global DATASET, START_TIMESTEP, END_TIMESTEP
+        self.dataset = self.ncar_datasets[DATASET]
+        self.start_timestep = START_TIMESTEP
+        self.end_timestep = END_TIMESTEP
+
+    def test_all_timesteps(self):
+        dataset = self.ncar_datasets[self.dataset]
+        for timestep in range(self.start_timestep, self.end_timestep + 1):
             lazy_zarr_cubes = dataset.transform_to_zarr(timestep)  # Still Original data, before write
             # Where Zarr data was written
             destination_paths = write_utils.get_zarr_array_destinations(dataset, timestep)
@@ -76,9 +90,9 @@ class VerifyZarrDataCorrectness(unittest.TestCase):
             original_subarray (xarray.Dataset): (Sub)Array of original data that was written as zarr to zar_group_path
             zarr_group_path (str): Location of the sub-chunked data as a Zarr Group
         '''
-        zarr_512 = zarr.open_group(zarr_group_path, mode='r')
+        zarr_group = zarr.open_group(zarr_group_path, mode='r')
         print("Comparing original 512^3 with ", zarr_group_path)
         for var in original_subarray.data_vars:
-            assert_eq(original_subarray[var].data, da.from_zarr(zarr_512[var]))
+            assert_eq(original_subarray[var].data, da.from_zarr(zarr_group[var]))
             print(var, " OK")
 
