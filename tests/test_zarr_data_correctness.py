@@ -19,7 +19,7 @@ class VerifyZarrDataCorrectness(unittest.TestCase):
         with open('tests/config.yaml', 'r') as file:
             cls.config = yaml.safe_load(file)
 
-        cls.dataset_name = os.environ.get('DATASET', 'NCAR_High_Rate_1')
+        cls.dataset = os.environ.get('DATASET', 'NCAR-High-Rate-1')
         cls.start_timestep = int(os.environ.get('START_TIMESTEP', 0))
         cls.end_timestep = int(os.environ.get('END_TIMESTEP', 2))
 
@@ -55,13 +55,13 @@ class VerifyZarrDataCorrectness(unittest.TestCase):
             )
         }
 
-        global DATASET, START_TIMESTEP, END_TIMESTEP
-        self.dataset = self.ncar_datasets[DATASET]
-        self.start_timestep = START_TIMESTEP
-        self.end_timestep = END_TIMESTEP
-
     def test_all_timesteps(self):
-        dataset = self.ncar_datasets[self.dataset]
+        dataset = self.ncar_datasets.get(self.dataset)
+        
+        if dataset is None:
+            raise KeyError(f"Dataset '{self.dataset}' not found in self.ncar_datasets.")
+
+        
         for timestep in range(self.start_timestep, self.end_timestep + 1):
             lazy_zarr_cubes = dataset.transform_to_zarr(timestep)  # Still Original data, before write
             # Where Zarr data was written
@@ -72,7 +72,7 @@ class VerifyZarrDataCorrectness(unittest.TestCase):
                 with self.subTest(timestep=timestep):
                     self.verify_zarr_group_data(original_data_cube, written_zarr_cube)
 
-    @parameterized.expand(get_sharding_queue())
+    # @parameterized.expand(get_sharding_queue())
     def verify_zarr_group_data(self, original_subarray, zarr_group_path):
         '''
         Verify correctness of data contained in each zarr group against
