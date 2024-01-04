@@ -10,8 +10,6 @@ import dask.array as da
 import numpy as np
 import xarray as xr
 
-from src.dataset import Dataset
-
 try:
     import morton
 except ImportError:
@@ -189,80 +187,6 @@ def search_dict_by_value(dictionary, value):
         if val == value:
             return key
     return None  # Value not found in the dictionary
-
-
-def get_zarr_array_destinations(dataset: Dataset, timestep: int):
-    """
-    Destinations of all Zarr arrays pertaining to how they are distributed on FileDB, according to Node Coloring
-    Args:
-        dataset (Dataset): dataset object filled with attributes of Dataset class
-        timestep (int): timestep of the dataset to process
-
-    Returns:
-        list[str]: List of destination paths of Zarr arrays
-    """
-    if dataset.prod_or_backup == "back":
-        raise NotImplementedError("TODO Implement writing backup copies")
-
-    folders = list_fileDB_folders()
-
-    # TODO Hard-coded
-    # Avoiding 7-2 and 9-2 - they're too full as of May 2023
-    folders.remove("/home/idies/workspace/turb/data09_02/zarr/")
-    folders.remove("/home/idies/workspace/turb/data07_02/zarr/")
-
-    for i in range(len(folders)):
-        folders[i] += dataset.name + "_" + str(i + 1).zfill(2) + "_" + dataset.prod_or_backup + "/"
-
-    range_list = []  # Where chunks start and end. Needed for Mike's code to find correct chunks to access
-    smaller_size = 512
-    outer_dim = []
-
-    for i in range(4):
-        mid_dim = []
-        for j in range(4):
-            inner_dim = []
-
-            for k in range(4):
-                a = []
-
-                a.append([k * smaller_size, (k + 1) * smaller_size])
-                a.append([j * smaller_size, (j + 1) * smaller_size])
-                a.append([i * smaller_size, (i + 1) * smaller_size])
-
-
-                range_list.append(a)
-
-            mid_dim.append(inner_dim)
-
-        outer_dim.append(mid_dim)
-
-    chunk_morton_mapping = get_chunk_morton_mapping(range_list, dataset.name)
-    flattened_node_assgn = flatten_3d_list(node_assignment(4))
-
-    dests = []
-
-    for i in range(len(range_list)):
-        #     for j in range(4):
-        #         for k in range(4):
-        min_coord = [a[0] for a in range_list[i]]
-        max_coord = [a[1] - 1 for a in range_list[i]]
-
-        morton = (morton_pack(dataset.original_array_length, min_coord[2], min_coord[1], min_coord[0]),
-                  morton_pack(dataset.original_array_length, max_coord[2], max_coord[1], max_coord[0]))
-
-        chunk_name = search_dict_by_value(chunk_morton_mapping, morton)
-
-        idx = int(chunk_name[-2:].lstrip('0'))
-
-        filedb_index = flattened_node_assgn[idx - 1] - 1
-
-        destination = os.path.join(folders[filedb_index],
-                                   dataset.name + str(idx).zfill(2) + "_" + str(timestep).zfill(3) + ".zarr")
-
-        dests.append(destination)
-
-    return dests
 
 
 def write_to_disk(q):
