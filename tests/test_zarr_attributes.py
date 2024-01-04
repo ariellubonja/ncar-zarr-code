@@ -43,16 +43,11 @@ class VerifyNCARZarrAttributes(unittest.TestCase):
             )
         ]
 
-    @classmethod
-    def generate_test_cases(cls):
-        test_cases = []
-        for dataset in cls.ncar_datasets:
-            # Using dataset name and timestep range as the label and parameters
-            label = f"{dataset.name}_{dataset.start_timestep}_to_{dataset.end_timestep}"
-            test_cases.append((label, dataset.start_timestep, dataset.end_timestep))
-        return test_cases
-
-    @parameterized.expand(generate_test_cases())
+    @parameterized.expand([
+        ("NCAR-High-Rate-1", 0, 49),
+        ("NCAR-High-Rate-2", 50, 99),
+        ("NCAR-Low-Rate", 0, 19),
+    ])
     def test_all_timesteps(self):
         for dataset in self.ncar_datasets:
             for timestep in range(dataset.start_timestep, dataset.end_timestep + 1):
