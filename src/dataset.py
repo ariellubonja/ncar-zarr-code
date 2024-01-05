@@ -97,11 +97,11 @@ class Dataset(ABC):
         '''
         # TODO Implement backup copy write
         for timestep in range(self.start_timestep, self.end_timestep + 1):
-            lazy_zarr_cubes = self.transform_to_zarr(timestep)
+            lazy_zarr_cubes, range_list = self.transform_to_zarr(timestep)
 
             q = queue.Queue()
 
-            dests = self.get_zarr_array_destinations(timestep)
+            dests = self.get_zarr_array_destinations(timestep, range_list)
 
             # Populate the queue with Write to FileDB tasks
             for i in range(len(dests)):
@@ -135,7 +135,7 @@ class NCAR_Dataset(Dataset):
         self.NCAR_files = glob.glob(os.path.join(self.location_path, f'*{self.file_extension}'))
         self.original_array_length = 2048
 
-    def transform_to_zarr(self, timestep: int) -> tuple():
+    def transform_to_zarr(self, timestep: int) -> tuple[list, list]:
         """
         Read and lazily transform the NetCDF data of NCAR to Zarr. This makes data ready for distributing to FileDB.
         """
