@@ -68,7 +68,7 @@ class Dataset(ABC):
     def _get_data_cube_side(self, data_xarray):
         raise NotImplementedError('TODO Implement reading the length of the 3D cube side from path')
 
-    def get_zarr_array_destinations(self, timestep: int):
+    def get_zarr_array_destinations(self, timestep: int, range_list: list):
         """
         Destinations of all Zarr arrays pertaining to how they are distributed on FileDB, according to Node Coloring
         Args:
@@ -135,14 +135,14 @@ class NCAR_Dataset(Dataset):
         self.NCAR_files = glob.glob(os.path.join(self.location_path, f'*{self.file_extension}'))
         self.original_array_length = 2048
 
-    def transform_to_zarr(self, timestep: int) -> list:
+    def transform_to_zarr(self, timestep: int) -> tuple():
         """
         Read and lazily transform the NetCDF data of NCAR to Zarr. This makes data ready for distributing to FileDB.
         """
-        cubes, _ = self._prepare_NCAR_NetCDF(timestep)
+        cubes, range_list = self._prepare_NCAR_NetCDF(timestep)
         cubes = write_utils.flatten_3d_list(cubes)
 
-        return cubes
+        return cubes, range_list
 
     def _prepare_NCAR_NetCDF(self, timestep: int):
         """
@@ -199,11 +199,12 @@ class NCAR_Dataset(Dataset):
         """
         return data_xarray['e'].data.shape[0]
 
-    def get_zarr_array_destinations(self, timestep: int):
+    def get_zarr_array_destinations(self, timestep: int, range_list: list):
         """
         Destinations of all Zarr arrays pertaining to how they are distributed on FileDB, according to Node Coloring
         Args:
             timestep (int): timestep of the dataset to process
+            range_list (list): Where chunks start and end. Needed for Mike's code to find correct chunks to access
 
         Returns:
             list[str]: List of destination paths of Zarr arrays
@@ -220,8 +221,6 @@ class NCAR_Dataset(Dataset):
 
         for i in range(len(folders)):
             folders[i] += self.name + "_" + str(i + 1).zfill(2) + "_" + self.prod_or_backup + "/"
-
-        range_list = []  # Where chunks start and end. Needed for Mike's code to find correct chunks to access
 
         chunk_morton_mapping = write_utils.get_chunk_morton_mapping(range_list, self.name)
         flattened_node_assgn = write_utils.flatten_3d_list(write_utils.node_assignment(4))
