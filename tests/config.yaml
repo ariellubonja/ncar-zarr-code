@@ -31,4 +31,4 @@ write_settings:
 
 
 general_settings:
-  verbose: True
+  verbose: False

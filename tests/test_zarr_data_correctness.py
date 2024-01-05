@@ -68,6 +68,6 @@ class VerifyZarrDataCorrectness(unittest.TestCase):
         print("Comparing original 512^3 with ", zarr_group_path)
         for var in original_subarray.data_vars:
             assert_eq(original_subarray[var].data, da.from_zarr(zarr_group[var]))
-            if config['verbose']:
+            if config['general_settings']['verbose']:
                 print(var, " OK")
 
