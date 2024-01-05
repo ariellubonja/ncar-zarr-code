@@ -209,9 +209,6 @@ class NCAR_Dataset(Dataset):
         Returns:
             list[str]: List of destination paths of Zarr arrays
         """
-        if self.prod_or_backup == "back":
-            raise NotImplementedError("TODO Implement writing backup copies")
-
         folders = write_utils.list_fileDB_folders()
 
         # TODO Hard-coded
@@ -221,6 +218,11 @@ class NCAR_Dataset(Dataset):
 
         for i in range(len(folders)):
             folders[i] += self.name + "_" + str(i + 1).zfill(2) + "_" + self.prod_or_backup + "/"
+
+        if self.prod_or_backup == "back":
+            # Shift list of FileDB folders by 1
+            first_element = folders.pop(0)
+            folders.append(first_element)
 
         chunk_morton_mapping = write_utils.get_chunk_morton_mapping(range_list, self.name)
         flattened_node_assgn = write_utils.flatten_3d_list(write_utils.node_assignment(4))
