@@ -24,9 +24,10 @@ def node_assignment(cube_side: int):
 
     :param cube_side: Length of the cube side to be assigned to nodes
     """
-    def get_bounds(idx:int, mx:int):
+
+    def get_bounds(idx: int, mx: int):
         """Helper for requesting valid indicies around an index"""
-        return max(idx-1, 0), min(idx+2, mx)
+        return max(idx - 1, 0), min(idx + 2, mx)
 
     # There are 34 availble nodes that are 1-indexed
     colors = np.arange(34) + 1
@@ -34,7 +35,6 @@ def node_assignment(cube_side: int):
     color_counts = np.zeros_like(colors)
     # An array to store the node assignment the 8192^3 data is broken into 512^3
     # sub-cubes so we need to 8192/512=16 assignments along each dimension
-
 
     nodes = np.zeros([cube_side, cube_side, cube_side], dtype=int)
 
@@ -49,13 +49,13 @@ def node_assignment(cube_side: int):
                 slice(*get_bounds(k, cube_side))
             ]
             avail_colors = np.setdiff1d(colors, neighbor_colors.flatten())
-            color_idxs = avail_colors-1
+            color_idxs = avail_colors - 1
             greedy_color_idx = np.argmin(color_counts[color_idxs])
             greedy_color = colors[color_idxs[greedy_color_idx]]
             color_counts[color_idxs[greedy_color_idx]] += 1
-            
+
             nodes[i, j, k] = greedy_color
-    
+
     return nodes
 
 
@@ -68,7 +68,9 @@ def split_zarr_group(ds, smaller_size, dims):
     Parameters:
         ds (xarray.Dataset): The Xarray group you want to split
         smaller_size (int): Size of the chunks along each dimension.
-        dims (tuple): Names of the dimensions in order (dim_0, dim_1, dim_2). This can be gotten in reverse order using [dim for dim in data_xr.dims]
+        dims (tuple): Names of the dimensions in order (dim_0, dim_1,
+        dim_2). This can be gotten in reverse order using
+        [dim for dim in data_xr.dims]
         
     Returns:
         list[xarray.Dataset]: A list of lists of lists of smaller Datasets.
@@ -79,8 +81,8 @@ def split_zarr_group(ds, smaller_size, dims):
 
     # I want this to be a 3D list of lists
     outer_dim = []
-    
-    range_list = [] # Where chunks start and end. Needed for Mike's code to find correct chunks to access
+
+    range_list = []  # Where chunks start and end. Needed for Mike's code to find correct chunks to access
 
     for i in range(num_chunks[0]):
         mid_dim = []
@@ -91,18 +93,18 @@ def split_zarr_group(ds, smaller_size, dims):
                 # Select the chunk from each DataArray
                 # These are first distributed along the last (i.e. the x)-index
                 chunk = ds.isel(
-                    {dims[0]: slice(i * smaller_size, (i + 1) * smaller_size), # nnz
-                     dims[1]: slice(j * smaller_size, (j + 1) * smaller_size), # nny
-                     dims[2]: slice(k * smaller_size, (k + 1) * smaller_size)} # nnx
+                    {dims[0]: slice(i * smaller_size, (i + 1) * smaller_size),  # nnz
+                     dims[1]: slice(j * smaller_size, (j + 1) * smaller_size),  # nny
+                     dims[2]: slice(k * smaller_size, (k + 1) * smaller_size)}  # nnx
                 )
 
                 inner_dim.append(chunk)
-                
+
                 a = []
                 a.append([i * smaller_size, (i + 1) * smaller_size])
                 a.append([j * smaller_size, (j + 1) * smaller_size])
                 a.append([k * smaller_size, (k + 1) * smaller_size])
-                
+
                 range_list.append(a)
 
             mid_dim.append(inner_dim)
@@ -113,44 +115,49 @@ def split_zarr_group(ds, smaller_size, dims):
 
 
 def list_fileDB_folders():
-    return [f'/home/idies/workspace/turb/data{str(d).zfill(2)}_{str(f).zfill(2)}/zarr/'  for f in range(1,4) for d in range(1,13)]
+    return [f'/home/idies/workspace/turb/data{str(d).zfill(2)}_{str(f).zfill(2)}/zarr/' for f in range(1, 4) for d in
+            range(1, 13)]
 
 
 def merge_velocities(transposed_ds, chunk_size_base=64):
     """
-        Merge the 3 velocity components/directions - such merging exhibits faster 3-component reads. This is a Dask lazy computation
+        Merge the 3 velocity components/directions - such merging
+        exhibits faster 3-component reads. This is a Dask lazy
+         computation
     """
 
     # Merge Velocities into 1
     b = da.stack([transposed_ds['u'], transposed_ds['v'], transposed_ds['w']], axis=3)
-    b = b.squeeze() # It should be (2048, 2048, 2048, 3, 1) before this. Use (2048, 2048, 2048, 3)
+    b = b.squeeze()  # It should be (2048, 2048, 2048, 3, 1) before this. Use (2048, 2048, 2048, 3)
     # Make into correct chunk sizes
-    b = b.rechunk((chunk_size_base,chunk_size_base,chunk_size_base,3)) # Dask chooses (64,64,64,1)
+    b = b.rechunk((chunk_size_base, chunk_size_base, chunk_size_base, 3))  # Dask chooses (64,64,64,1)
     result = transposed_ds.drop_vars(['u', 'v', 'w'])  # Drop individual velocities
 
     # Add joined velocity to original group
-    result['velocity'] = xr.DataArray(b, dims=('nnz', 'nny', 'nnx', 'velocity component (xyz)')) # Can't make the dim name same as scalars
-
+    # Can't make the dim name same as scalars
+    result['velocity'] = xr.DataArray(b, dims=(
+        'nnz', 'nny', 'nnx', 'velocity component (xyz)'))
 
     return result
 
 
-def morton_pack(array_cube_side, x,y,z):
+def morton_pack(array_cube_side, x, y, z):
     bits = int(math.log(array_cube_side, 2))
-    mortoncurve = morton.Morton(dimensions = 3, bits = bits)
+    mortoncurve = morton.Morton(dimensions=3, bits=bits)
 
     return mortoncurve.pack(x, y, z)
 
 
 def get_sorted_morton_list(range_list, array_cube_side=2048):
-    sorted_morton_list = [] # Sorting by Morton code to be consistent with Isotropic8192
+    sorted_morton_list = []  # Sorting by Morton code to be consistent with Isotropic8192
 
     for i in range(len(range_list)):
         min_coord = [a[0] for a in range_list[i]]
         max_coord = [a[1] - 1 for a in range_list[i]]
-                
-        sorted_morton_list.append((morton_pack(array_cube_side, min_coord[0], min_coord[1], min_coord[2]), morton_pack(array_cube_side, max_coord[0], max_coord[1], max_coord[2])))
-            
+
+        sorted_morton_list.append((morton_pack(array_cube_side, min_coord[0], min_coord[1], min_coord[2]),
+                                   morton_pack(array_cube_side, max_coord[0], max_coord[1], max_coord[2])))
+
     sorted_morton_list = sorted(sorted_morton_list)
 
     return sorted_morton_list
@@ -158,24 +165,27 @@ def get_sorted_morton_list(range_list, array_cube_side=2048):
 
 def get_chunk_morton_mapping(range_list, dest_folder_name):
     """
-    Get names of chunks e.g. sabl2048b01, sabl2048b02, etc. and their corresponding first and last point Morton codes
+    Get names of chunks e.g. sabl2048b01, sabl2048b02, etc. and their
+     corresponding first and last point Morton codes
 
-    :param range_list: 3D list of subarray cubes (e.g. 2048-cube is split into 512-cubes of 4x4x4). This 4x4x4 list is `range_list`
-    :param dest_folder_name: Name of the destination folder (e.g. sabl2048b)
+    :param range_list: 3D list of subarray cubes (e.g. 2048-cube is split
+    into 512-cubes of 4x4x4). This 4x4x4 list is `range_list`
+    :param dest_folder_name: Name of the destination folder
+    (e.g. sabl2048b)
     """
     sorted_morton_list = get_sorted_morton_list(range_list)
 
     chunk_morton_mapping = {}
     for i in range(len(range_list)):
         chunk_morton_mapping[dest_folder_name + str(i + 1).zfill(2)] = sorted_morton_list[i]
-    
+
     return chunk_morton_mapping
 
 
 # This always fails with Kernel Died error on SciServer Jobs
 # @dask.delayed
 # def write_to_disk_dask(dest_groupname, current_array, encoding):
-    # return write_to_disk(dest_groupname, current_array, encoding)
+# return write_to_disk(dest_groupname, current_array, encoding)
 
 
 def flatten_3d_list(lst_3d):

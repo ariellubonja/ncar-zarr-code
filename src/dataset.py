@@ -73,6 +73,7 @@ class Dataset(ABC):
         Destinations of all Zarr arrays pertaining to how they are distributed on FileDB, according to Node Coloring
         Args:
             timestep (int): timestep of the dataset to return paths for
+            range_list: Where zarr subarrays start and end. Needed for Mike's code to find correct chunks to access
 
         Returns:
             list (str): List of destination paths of Zarr arrays

@@ -40,7 +40,8 @@ class VerifyNCARZarrAttributes(unittest.TestCase):
             end_timestep=dataset_config['end_timestep']
         )
 
-        destination_paths = dataset.get_zarr_array_destinations(timestep)
+        _, range_list = dataset.transform_to_zarr(timestep)
+        destination_paths = dataset.get_zarr_array_destinations(timestep, range_list)
 
         for zarr_512_path in destination_paths:
             with self.subTest(timestep=timestep):
