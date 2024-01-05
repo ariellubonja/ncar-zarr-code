@@ -31,7 +31,7 @@ def generate_data_correctness_tests():
         name=dataset_config['name'],
         location_path=dataset_config['location_path'],
         desired_zarr_chunk_size=write_config['desired_zarr_chunk_length'],
-        desired_zarr_array_length=write_config['desired_zarr_chunk_length'],
+        desired_zarr_array_length=write_config['desired_zarr_array_length'],
         prod_or_backup=write_config['prod_or_backup'],
         start_timestep=dataset_config['start_timestep'],
         end_timestep=dataset_config['end_timestep']
