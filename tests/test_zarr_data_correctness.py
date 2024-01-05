@@ -20,6 +20,9 @@ end_timestep = int(os.environ.get('END_TIMESTEP', 2))
 # Cannot call class method using Parameterized, so have to add this fn. outside the class
 def generate_data_correctness_tests():
     global config, dataset_name, start_timestep, end_timestep
+    
+    print("start_timestep: ", start_timestep)
+    print("end_timestep: ", end_timestep)
 
     test_params = []
     dataset_config = config['datasets'][dataset_name]
@@ -34,11 +37,16 @@ def generate_data_correctness_tests():
         end_timestep=dataset_config['end_timestep']
     )
 
-    for timestep in range(max(start_timestep, dataset.start_timestep), min(end_timestep, dataset.end_timestep) + 1):
+    for timestep in range(start_timestep, end_timestep + 1):
+        print("Current timestep: ", timestep)
         lazy_zarr_cubes = dataset.transform_to_zarr(timestep)
+        print("len of lazy_zarr_cubes: ", len(lazy_zarr_cubes))
         destination_paths = dataset.get_zarr_array_destinations(timestep)
+        print("len of destination_paths: ", len(destination_paths))
         for original_data_cube, written_zarr_cube in zip(lazy_zarr_cubes, destination_paths):
             test_params.append((original_data_cube, written_zarr_cube))
+    
+    print("Done generating tests. Len of test_params: ", len(test_params))
     return test_params
 
 
