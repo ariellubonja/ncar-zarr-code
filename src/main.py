@@ -1,7 +1,7 @@
 # Author: Ariel Lubonja <ariellubonja@live.com>
 # Date: 26-Dec-2023
 
-from dataset import NCAR_Dataset
+from src.dataset import NCAR_Dataset
 import argparse
 
 if __name__ == "__main__":
