@@ -1,19 +1,23 @@
-# Reduce Data Read Time by Disk-Parallel Access
+# Speed Up Scientific Data Analysis with Efficient Data Storage
 
-This data management tool is designed to efficiently handle and distribute large scientific datasets. This package transforms datasets into the Zarr format and smartly distributes them across multiple disks, enabling faster parallel data access. It's an ideal solution for scientists and data analysts working with extensive datasets, such as in climate research or astronomy.
+**Welcome to our data management tool!** This tool is crafted to help you manage and analyze large scientific datasets more effectively. Using this, you can convert your datasets into a format called Zarr and then distribute them across multiple storage disks. This helps in speeding up the process of reading data, making it a great fit for scientific research in areas like climate studies and astronomy.
 
-This package is designed to transform any Xarray-compatible scientific datasets into [Zarr format](https://zarr.readthedocs.io/en/stable/) and distribute these Zarr files to a network of disks, _**to maximize Parallel Read speed by using multiple disks**_. The code is written to target [Johns Hopkins' FileDB Database](https://turbulence.pha.jhu.edu/datasets.aspx), but is written to be easily adaptible to your own use case
+### How Does It Work?
+- **Converts to [Zarr](https://zarr.readthedocs.io/en/stable/) Format**: The tool changes your datasets into Zarr format, known for its efficiency and versatility.
+- **Distributes Data Across Disks**: It spreads out the data across different disks, which allows for faster parallel access to the data.
+- **Customizable**: Originally designed for [Johns Hopkins' FileDB Database](https://turbulence.pha.jhu.edu), this tool can be easily adapted for different storage setups.
 
-The script handles:
+### Key Features
+- **Balanced Disk Usage**: It writes data in a round-robin manner to balance the load on each disk.
+- **Smart Data Separation**: Ensures neighboring data chunks are not on the same disk by solving the [Map Coloring](https://en.wikipedia.org/wiki/Four_color_theorem) problem, maximizing parallel read efficiency.
+- **Optimized Data Order**: Uses Morton/z-ordering to optimize the way data is lined up and accessed.
+- **Supports Zarr Encoding and Compression**: Enhances data storage efficiency.
 
-- Writing to disks in round-robin fashion, to load-balance disk usage
-- separate neighboring data subarrays, so that no two neighboring data chunks end up on the same disk. This is done so that for any contiguous data access, parallel read is maximized.
-- Morton/z-ordering of chunks, to ensure near-optimal linearization of data chunks
-- Zarr encoding and Compression
-- writing both production and backup copies. By default, backup copies are shifted by one, to minimize data loss overlap in case of disk failure
+- **Dual Copy Writing**: Creates both primary and backup copies of data for added safety.
 
-### Script Installation
-Simply use `git clone https://github.com/ariellubonja/zarrify-across-network` to download this repository.
+
+### Easy Installation
+Get started quickly: git clone https://github.com/ariellubonja/zarrify-across-network.
 
 ### Adapting the Script to Distribute Your Own Files
 
