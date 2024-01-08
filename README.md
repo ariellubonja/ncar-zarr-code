@@ -1,9 +1,39 @@
-# Dataset Distribution to Zarr and FileDB
+# Maximize Large Data Parallel Read Speed by Distributing to Multiple Disks
 
-This package is designed to transform datasets into [Zarr format](https://zarr.readthedocs.io/en/stable/) and distribute them on [Johns Hopkins' FileDB](https://turbulence.pha.jhu.edu/datasets.aspx) disks. It handles data chunking, Zarr encoding and Compression, and writing both production and backup distribution types.
+This package is designed to transform any Xarray-compatible scientific datasets into [Zarr format](https://zarr.readthedocs.io/en/stable/) and distribute these Zarr files from a single disk to a network of disks, _**to maximize Parallel Read speed by using multiple disks**_. The code is written to target [Johns Hopkins' FileDB Database](https://turbulence.pha.jhu.edu/datasets.aspx), but can be easily adapted to your own disks by just changing the `folder_paths` variable.
 
-### Script Usage
-Run `main.py` with the necessary arguments to initiate the process of converting and distributing data. The script requires the timestep, path to the NCAR .netcdf files, and other optional parameters.
+The script handles:
+
+- round-robin write, to load-balance disk usage
+- separate neighboring data subarrays, so that no two neighboring data chunks end up on the same disk. This is done so that for any contiguous data access, parallel read is maximized.
+- Morton/z-ordering of chunks, to ensure near-optimal linearization of data chunks
+- Zarr encoding and Compression
+- writing both production and backup copies. By default, backup copies are shifted by one, to minimize data loss overlap in case of disk failure
+
+### Script Installation
+Simply use `git clone https://github.com/ariellubonja/zarrify-across-network` to download this repository.
+
+### Adapting the Script to Distribute Your Own Files
+
+- **Changing Input Paths**: Input data folder is specified using the `--path` argument in `main.py`. The path should contain Xarray-compatible data
+
+#### Changing Output Paths for Distributed Files
+
+1. Have single Xarray-compatible files which contain your large Scientific data
+1. Have multiple hard disks on which you want to distribute. These should be in a list of paths (i.e. list of strings)
+2. `src/utils/write_utils.py:list_fileDB_folders()` should be changed to return your disk paths
+3. `src/dataset.py:get_zarr_array_destinations()` determines the destination paths for the Zarr files in an ordered list. Change this to match your desired directory structure
+
+#### Changing the Disk Node Assignment Schema
+
+This code is located in `src/utils/write_utils.py:node_assignment()`
+
+The function takes in the number of nodes and the number of batches and returns a list of lists, where each sublist contains the node assignments for a batch. The current implementation uses the [Node/Map Coloring algorithm](https://en.wikipedia.org/wiki/Graph_coloring#Node_coloring) to assign nodes to batches. You can modify this function to implement your own node assignment schema.
+
+
+### Running the Script
+
+Run `main.py` with the necessary arguments to initiate the process of converting and distributing data. The script requires the timestep, path to the input Xarray-compatible files, and other optional parameters.
 
 
 Command-Line Arguments:
@@ -34,25 +64,10 @@ Example Command:
 
 - I've found that using Dask's local dir (`dask_local_dir='/home/idies/workspace/turb/data02_02', n_dask_workers=4)` is slower than not.
 
-## If You Want to Reuse Script for Your Own Data and Network of Disks
-
 [//]: # (### Customizing Destination Layout and Assignment Schema)
 
 
 [//]: # (If you need to adapt the destination layout for Zarr files or change the node assignment schema in this repository, you can do so by editing specific functions within `utils/write_utils.py`. Below are guidelines on where and how to make these changes:)
-
-#### Changing Destination Paths for Distributed Files
-
-
-To customize the dispersion of Zarr files across your network of disks:
-
-- Edit the Destination Path Logic: `utils/write_utils.py:get_512_chunk_destinations()` determines the destination paths for the Zarr files in an ordered list. Change this to match your desired directory structure
-
-#### Adapting the Disk Node Assignment Schema
-
-This code is located in `utils/write_utils.py:node_assignment()`
-
-The function takes in the number of nodes and the number of batches and returns a list of lists, where each sublist contains the node assignments for a batch. The current implementation uses the [Node/Map Coloring algorithm](https://en.wikipedia.org/wiki/Graph_coloring#Node_coloring) to assign nodes to batches. You can modify this function to implement your own node assignment schema.
 
 #### Need Further Assistance?
 If you encounter difficulties or have specific questions about customizing the code for your use case, please feel free to open an issue in the repository. We're here to help and would be happy to assist you in adapting the tool to your specific needs.
@@ -79,41 +94,22 @@ END_TIMESTEP: The ending timestep number for testing.
 You can set these variables in your terminal as follows:
 
 For Linux/Mac:
-
-bash
-Copy code
+```
 export DATASET="NCAR-High-Rate-1"
 export START_TIMESTEP=0
 export END_TIMESTEP=2
-For Windows:
+```
 
-cmd
-Copy code
+For Windows:
+```
 set DATASET=NCAR-High-Rate-1
 set START_TIMESTEP=0
 set END_TIMESTEP=2
-Running the Tests
+```
+### Running the Tests
 
 After setting the environment variables, run the tests using the unittest module:
 
-bash
-Copy code
-python -m unittest tests/test_zarr_data_correctness.py
+> python -m unittest tests/test_zarr_data_correctness.py
+
 The tests will automatically read the environment variables and run the data correctness checks for the specified dataset and timesteps.
-
-
-### Jupyter Notebooks Description
-
-The repository contains code in notebooks. Some of them are used for testing and some for visualization. There is also deprecated code. Here is a brief description of the notebooks:
-
-1. chunk-partial-decompress-NOshard - various read speed rests using Zarr chunking but Not Sharding
-
-2. zarr_sharding - same but with Sharding
-
-3. compression-tradeoff-1-var - Testing how much compression affects read speed, using only 1 variable from NCAR data, as opposed to the usual 6
-
-4. round-robin - spread Zarr data round robin across fileDB nodes
-
-5. NCAR to Zarr - convert NCAR netCDF into zarr with (64,64,64) chunk size
-
-6. visualize-NCAR-animation - plot some 2D slices of NCAR data and create a video animation. Used to check sanity data 
