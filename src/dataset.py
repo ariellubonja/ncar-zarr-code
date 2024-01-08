@@ -5,7 +5,7 @@
 from abc import ABC, abstractmethod
 import queue
 import threading
-from utils import write_utils
+from .utils import write_utils
 import xarray as xr
 import dask
 import glob
