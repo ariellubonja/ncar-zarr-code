@@ -1,10 +1,12 @@
-# Maximize Large Data Parallel Read Speed by Distributing to Multiple Disks
+# Reduce Data Read Time by Disk-Parallel Access
 
-This package is designed to transform any Xarray-compatible scientific datasets into [Zarr format](https://zarr.readthedocs.io/en/stable/) and distribute these Zarr files from a single disk to a network of disks, _**to maximize Parallel Read speed by using multiple disks**_. The code is written to target [Johns Hopkins' FileDB Database](https://turbulence.pha.jhu.edu/datasets.aspx), but can be easily adapted to your own disks by just changing the `folder_paths` variable.
+This data management tool is designed to efficiently handle and distribute large scientific datasets. This package transforms datasets into the Zarr format and smartly distributes them across multiple disks, enabling faster parallel data access. It's an ideal solution for scientists and data analysts working with extensive datasets, such as in climate research or astronomy.
+
+This package is designed to transform any Xarray-compatible scientific datasets into [Zarr format](https://zarr.readthedocs.io/en/stable/) and distribute these Zarr files to a network of disks, _**to maximize Parallel Read speed by using multiple disks**_. The code is written to target [Johns Hopkins' FileDB Database](https://turbulence.pha.jhu.edu/datasets.aspx), but is written to be easily adaptible to your own use case
 
 The script handles:
 
-- round-robin write, to load-balance disk usage
+- Writing to disks in round-robin fashion, to load-balance disk usage
 - separate neighboring data subarrays, so that no two neighboring data chunks end up on the same disk. This is done so that for any contiguous data access, parallel read is maximized.
 - Morton/z-ordering of chunks, to ensure near-optimal linearization of data chunks
 - Zarr encoding and Compression
