@@ -15,7 +15,7 @@ with open('tests/config.yaml', 'r') as file:
 dataset_name = os.environ.get('DATASET', 'NCAR-High-Rate-1')
 start_timestep = int(os.environ.get('START_TIMESTEP', 0))
 end_timestep = int(os.environ.get('END_TIMESTEP', 2))
-prod_or_backup = int(os.environ.get('PROD_OR_BACKUP', 'prod'))
+prod_or_backup = str(os.environ.get('PROD_OR_BACKUP', 'prod'))
 
 
 # Cannot call class method using Parameterized, so have to add this fn. outside the class
