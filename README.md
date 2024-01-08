@@ -55,7 +55,7 @@ Command-Line Arguments:
 
 Example Command:
 
-> python src/main.py -p /path/to/ncar/netcdf/files/jhd.000.nc -n sabl2048a
+> python -m src.main -p /path/to/ncar/netcdf/files/jhd.000.nc -n sabl2048a
 
 
 ##### Notes
