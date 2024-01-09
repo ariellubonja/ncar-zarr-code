@@ -10,6 +10,7 @@ import xarray as xr
 import dask
 import glob
 import os
+import re
 
 
 class Dataset(ABC):
@@ -157,8 +158,22 @@ class NCAR_Dataset(Dataset):
         """
         # TODO The variable names are hard-coded
 
+        def select_file(file_list, timestep):
+            for full_path in file_list:
+                # Extract the filename from the full path
+                filename = os.path.basename(full_path)
+
+                # Extract the number from the filename using a more specific regular expression
+                match = re.search(r'jhd\.(\d+)\.nc', filename)
+                if match:
+                    file_timestep = int(match.group(1))
+                    if file_timestep == timestep:
+                        return full_path
+            # If no file is found, raise an exception
+            raise FileNotFoundError(f"No file found for timestep {timestep}")
+        
         # Open the dataset using xarray
-        data_xr = xr.open_dataset(self.NCAR_files[timestep],
+        data_xr = xr.open_dataset(select_file(self.NCAR_files,timestep),
                                   chunks={'nnz': self.desired_zarr_chunk_size, 'nny': self.desired_zarr_chunk_size,
                                           'nnx': self.desired_zarr_chunk_size})
 
