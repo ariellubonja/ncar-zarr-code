@@ -97,7 +97,8 @@ class Dataset(ABC):
             NUM_THREADS (int): Number of threads to use when writing to disk. Currently 34 to match nr. of disks on
                 FileDB
         '''
-        # TODO Implement backup copy write
+        # Note that this multithreading works over multiple timesteps. 2nd
+        #   timestep will start before 1st is finished
         for timestep in range(self.start_timestep, self.end_timestep + 1):
             lazy_zarr_cubes, range_list = self.transform_to_zarr(timestep)
 
