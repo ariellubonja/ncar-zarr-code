@@ -208,16 +208,22 @@ def write_to_disk(q):
         q (Queue): Queue of jobs
     """
     while True:
+        processed = False
         try:
             chunk, dest_groupname, encoding = q.get(timeout=10)  # Adjust timeout as necessary
 
             print(f"Starting write to {dest_groupname}...")
             chunk.to_zarr(store=dest_groupname, mode="w", encoding=encoding)
             print(f"Finished writing to {dest_groupname}.")
+            processed = True
         except queue.Empty:
-            break  # Break the loop if no items are left in the queue
-        # finally: # I think this is too many task_done() calls
-        #     q.task_done()
+            return  # Exit the thread if the queue is empty
+        finally:
+            # Careful not to call task_done() too many times
+            # But also if you don't call it, last thread will not exit the loop when finished
+            # Therefore the code will stall the SciServer Job even though it's done
+            if processed:
+                q.task_done()
 
 
 def get_sharding_queue(dataset):
