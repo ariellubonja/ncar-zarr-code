@@ -1,1 +1,7 @@
 src/.ipynb_checkpoints/
+debug/.ipynb_checkpoints/
+src/__pycache__/
+src/utils/.ipynb_checkpoints/
+src/utils/__pycache__/
+tests/.ipynb_checkpoints/
+tests/__pycache__/
