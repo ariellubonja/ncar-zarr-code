@@ -44,10 +44,10 @@ def generate_data_correctness_tests():
         print("Current timestep: ", timestep)
         lazy_zarr_cubes, range_list = dataset.transform_to_zarr(timestep)
         print("len of lazy_zarr_cubes: ", len(lazy_zarr_cubes))
-        destination_paths = dataset.get_zarr_array_destinations(timestep, range_list)
+        destination_paths, chunk_morton_order = dataset.get_zarr_array_destinations(timestep, range_list)
         print("len of destination_paths: ", len(destination_paths))
-        for original_data_cube, written_zarr_cube in zip(lazy_zarr_cubes, destination_paths):
-            test_params.append((original_data_cube, written_zarr_cube))
+        for original_data_cube, written_zarr_cube, morton_idx in zip(lazy_zarr_cubes, destination_paths, chunk_morton_order):
+            test_params.append((original_data_cube[morton_idx], written_zarr_cube))
 
     print("Done generating tests. Len of test_params: ", len(test_params))
     return test_params

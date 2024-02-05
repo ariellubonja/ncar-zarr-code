@@ -264,4 +264,4 @@ class NCAR_Dataset(Dataset):
 
             dests.append(destination)
 
-        return dests
+        return dests, chunk_morton_mapping
