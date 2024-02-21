@@ -241,8 +241,6 @@ class NCAR_Dataset(Dataset):
             
             folders[idx] += self.name + "_" + str(idx + 1).zfill(2) + "_" + self.prod_or_backup + "/"
 
-        print(folders)
-        raise Exception
         if self.prod_or_backup == "back":
             # Shift list of FileDB folders by 1
             first_element = folders.pop(0)
