@@ -234,8 +234,15 @@ class NCAR_Dataset(Dataset):
         folders.remove("/home/idies/workspace/turb/data07_02/zarr/")
 
         for i in range(len(folders)):
-            folders[i] += self.name + "_" + str(i + 1).zfill(2) + "_" + self.prod_or_backup + "/"
+            if self.prod_or_backup == "prod":
+                idx = i
+            else:  # Shift back by 1
+                idx = i - 1
+            
+            folders[idx] += self.name + "_" + str(idx + 1).zfill(2) + "_" + self.prod_or_backup + "/"
 
+        print(folders)
+        raise Exception
         if self.prod_or_backup == "back":
             # Shift list of FileDB folders by 1
             first_element = folders.pop(0)
@@ -250,8 +257,8 @@ class NCAR_Dataset(Dataset):
             min_coord = [a[0] for a in range_list[i]]
             max_coord = [a[1] - 1 for a in range_list[i]]
 
-            morton = (write_utils.morton_pack(self.original_array_length, min_coord[2], min_coord[1], min_coord[0]),
-                      write_utils.morton_pack(self.original_array_length, max_coord[2], max_coord[1], max_coord[0]))
+            morton = (write_utils.morton_pack(self.original_array_length, min_coord[1], min_coord[1], min_coord[2]),
+                      write_utils.morton_pack(self.original_array_length, max_coord[0], max_coord[1], max_coord[2]))
 
             chunk_name = write_utils.search_dict_by_value(chunk_morton_mapping, morton)
 
