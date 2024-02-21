@@ -247,6 +247,7 @@ class NCAR_Dataset(Dataset):
             folders.append(first_element)
 
         chunk_morton_mapping = write_utils.get_chunk_morton_mapping(range_list, self.name)
+        # print("chunk_morton_mapping name: ", chunk_morton_mapping)
         flattened_node_assgn = write_utils.flatten_3d_list(write_utils.node_assignment(4))
 
         dests = []
@@ -255,10 +256,12 @@ class NCAR_Dataset(Dataset):
             min_coord = [a[0] for a in range_list[i]]
             max_coord = [a[1] - 1 for a in range_list[i]]
 
-            morton = (write_utils.morton_pack(self.original_array_length, min_coord[1], min_coord[1], min_coord[2]),
+            morton = (write_utils.morton_pack(self.original_array_length, min_coord[0], min_coord[1], min_coord[2]),
                       write_utils.morton_pack(self.original_array_length, max_coord[0], max_coord[1], max_coord[2]))
 
             chunk_name = write_utils.search_dict_by_value(chunk_morton_mapping, morton)
+            # print("Chunk name: ", chunk_name)
+            # raise Exception
 
             idx = int(chunk_name[-2:].lstrip('0'))
 
