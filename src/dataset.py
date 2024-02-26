@@ -106,7 +106,7 @@ class Dataset(ABC):
 
             # stores = [KVStore(zarr.DirectoryStore(path)) for path in dest_groupname]
 
-            dests = self.get_zarr_array_destinations(timestep, range_list)
+            dests, _ = self.get_zarr_array_destinations(timestep, range_list)
 
             # Populate the queue with Write to FileDB tasks
             for i in range(len(dests)):
