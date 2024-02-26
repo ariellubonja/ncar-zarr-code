@@ -45,8 +45,9 @@ def generate_data_correctness_tests():
         lazy_zarr_cubes, range_list = dataset.transform_to_zarr(timestep)
         print("len of lazy_zarr_cubes: ", len(lazy_zarr_cubes))
         destination_paths, chunk_morton_order = dataset.get_zarr_array_destinations(timestep, range_list)
+        # chunk_morton_order = list(chunk_morton_order)  # For Zip to work properly
         print("len of destination_paths: ", len(destination_paths))
-        for original_data_cube, written_zarr_cube, morton_idx in zip(lazy_zarr_cubes, destination_paths, chunk_morton_order):
+        for original_data_cube, (written_zarr_cube, morton_idx) in zip(lazy_zarr_cubes, chunk_morton_order.items()):
             test_params.append((original_data_cube[morton_idx], written_zarr_cube))
 
     print("Done generating tests. Len of test_params: ", len(test_params))
