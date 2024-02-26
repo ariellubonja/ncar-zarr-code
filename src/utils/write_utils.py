@@ -115,7 +115,7 @@ def split_zarr_group(ds, smaller_size, dims):
 
 
 def list_fileDB_folders():
-    return [f'/home/idies/workspace/turb/data{str(d).zfill(2)}_{str(f).zfill(2)}/zarr/' for f in range(1, 4) for d in
+    return [f'/Volumes/backup-hdd/ncar/data{str(d).zfill(2)}_{str(f).zfill(2)}/zarr/' for f in range(1, 4) for d in
             range(1, 13)]
 
 

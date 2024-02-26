@@ -89,7 +89,7 @@ class Dataset(ABC):
         """
         raise NotImplementedError("Subclasses must implement this method")
 
-    def distribute_to_filedb(self, NUM_THREADS=34):
+    def distribute_to_filedb(self, NUM_THREADS=1):
         '''
         Distribute the dataset to FileDB using Ryan Hausen's node_assignment() node coloring alg.
 
@@ -103,6 +103,8 @@ class Dataset(ABC):
             lazy_zarr_cubes, range_list = self.transform_to_zarr(timestep)
 
             q = queue.Queue()
+
+            # stores = [KVStore(zarr.DirectoryStore(path)) for path in dest_groupname]
 
             dests = self.get_zarr_array_destinations(timestep, range_list)
 
@@ -230,8 +232,8 @@ class NCAR_Dataset(Dataset):
 
         # TODO Hard-coded
         # Avoiding 7-2 and 9-2 - they're too full as of May 2023
-        folders.remove("/home/idies/workspace/turb/data09_02/zarr/")
-        folders.remove("/home/idies/workspace/turb/data07_02/zarr/")
+        folders.remove("/Volumes/backup-hdd/ncar/data09_02/zarr/")
+        folders.remove("/Volumes/backup-hdd/ncar/data07_02/zarr/")
 
         for i in range(len(folders)):
             if self.prod_or_backup == "prod":
