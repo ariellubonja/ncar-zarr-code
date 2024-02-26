@@ -8,7 +8,7 @@
 datasets:
   NCAR-High-Rate-1:
     name: sabl2048b
-    location_path: /home/idies/workspace/turb/data02_02/ncar-high-rate-fixed-dt/
+    location_path: /Users/ariellubonja/Downloads/
     start_timestep: 0
     end_timestep: 49
   NCAR-High-Rate-2:
