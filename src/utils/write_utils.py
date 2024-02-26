@@ -148,6 +148,21 @@ def morton_pack(array_cube_side, x, y, z):
     return mortoncurve.pack(x, y, z)
 
 
+def morton_unpack(array_cube_side: int, morton_code: int) -> list:
+    """
+    Unpacks a Morton code into its x, y, z coordinates
+    Args:
+        array_cube_side (int): length of the array we are (un)packing
+        morton_code (int): the morton index to convert to x, y, z
+
+    Returns:
+        list: the x, y, z coordinates corresponding to the morton code
+    """
+    bits = int(math.log(array_cube_side, 2))
+    mortoncurve = morton.Morton(dimensions=3, bits=bits)
+
+    return mortoncurve.unpack(morton_code)
+
 def get_sorted_morton_list(range_list, array_cube_side=2048):
     sorted_morton_list = []  # Sorting by Morton code to be consistent with Isotropic8192
 

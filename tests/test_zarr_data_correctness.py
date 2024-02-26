@@ -7,6 +7,7 @@ import os
 from parameterized import parameterized
 
 from src.dataset import NCAR_Dataset
+from src.utils import write_utils
 
 
 config = {}
@@ -48,7 +49,14 @@ def generate_data_correctness_tests():
         # chunk_morton_order = list(chunk_morton_order)  # For Zip to work properly
         print("len of destination_paths: ", len(destination_paths))
         for original_data_cube, (written_zarr_cube, morton_idx) in zip(lazy_zarr_cubes, chunk_morton_order.items()):
-            test_params.append((original_data_cube[morton_idx], written_zarr_cube))
+            start_coords = write_utils.morton_unpack(2048, morton_idx[0])
+            end_coords = write_utils.morton_unpack(2048, morton_idx[1])
+
+            sub_array = original_data_cube.sel(nnx=slice(start_coords[0], end_coords[0]),
+                                       nny=slice(start_coords[1], end_coords[1]),
+                                       nnz=slice(start_coords[2], end_coords[2]))
+
+            test_params.append((sub_array, written_zarr_cube))
 
     print("Done generating tests. Len of test_params: ", len(test_params))
     return test_params
