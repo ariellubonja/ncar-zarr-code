@@ -7,11 +7,10 @@ import os
 from parameterized import parameterized
 
 from src.dataset import NCAR_Dataset
-from src.utils import write_utils
 
 
 config = {}
-with open('/Users/ariellubonja/prog/zarrify-across-network/tests/config.yaml', 'r') as file:
+with open('tests/config.yaml', 'r') as file:
     config = yaml.safe_load(file)
 dataset_name = os.environ.get('DATASET', 'NCAR-High-Rate-1')
 start_timestep = int(os.environ.get('START_TIMESTEP', 40))
