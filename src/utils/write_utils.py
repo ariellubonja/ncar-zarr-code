@@ -77,7 +77,7 @@ def split_zarr_group(ds, smaller_size, dims):
     """
 
     # Calculate the number of chunks along each dimension
-    num_chunks = [ds.dims[dim] // smaller_size for dim in dims]
+    num_chunks = [ds.sizes[dim] // smaller_size for dim in dims]
 
     # I want this to be a 3D list of lists
     outer_dim = []
