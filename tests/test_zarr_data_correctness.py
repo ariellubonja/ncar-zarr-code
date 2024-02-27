@@ -7,14 +7,15 @@ import os
 from parameterized import parameterized
 
 from src.dataset import NCAR_Dataset
+from src.utils import write_utils
 
 
 config = {}
-with open('tests/config.yaml', 'r') as file:
+with open('/Users/ariellubonja/prog/zarrify-across-network/tests/config.yaml', 'r') as file:
     config = yaml.safe_load(file)
 dataset_name = os.environ.get('DATASET', 'NCAR-High-Rate-1')
-start_timestep = int(os.environ.get('START_TIMESTEP', 0))
-end_timestep = int(os.environ.get('END_TIMESTEP', 2))
+start_timestep = int(os.environ.get('START_TIMESTEP', 40))
+end_timestep = int(os.environ.get('END_TIMESTEP', 40))
 prod_or_backup = str(os.environ.get('PROD_OR_BACKUP', 'prod'))
 
 
@@ -43,11 +44,11 @@ def generate_data_correctness_tests():
     for timestep in range(start_timestep, end_timestep + 1):
         print("Current timestep: ", timestep)
         lazy_zarr_cubes, range_list = dataset.transform_to_zarr(timestep)
-        print("len of lazy_zarr_cubes: ", len(lazy_zarr_cubes))
         destination_paths, chunk_morton_order = dataset.get_zarr_array_destinations(timestep, range_list)
-        print("len of destination_paths: ", len(destination_paths))
-        for original_data_cube, written_zarr_cube, morton_idx in zip(lazy_zarr_cubes, destination_paths, chunk_morton_order):
-            test_params.append((original_data_cube[morton_idx], written_zarr_cube))
+
+        for original_data_cube, written_zarr_cube, morton_idx in zip(lazy_zarr_cubes, destination_paths, chunk_morton_order.values()):
+            # no need to .sel(). Original subcube should already be selected
+            test_params.append((original_data_cube, written_zarr_cube))
 
     print("Done generating tests. Len of test_params: ", len(test_params))
     return test_params
