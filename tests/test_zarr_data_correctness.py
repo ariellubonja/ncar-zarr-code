@@ -68,17 +68,9 @@ class VerifyZarrDataCorrectness(unittest.TestCase):
             zarr_group_path (str): Location of the sub-chunked data as a Zarr Group
         '''
         zarr_group = zarr.open_group(zarr_group_path, mode='r')
-        print("Comparing original data with ", zarr_group_path)
-
+        print("Comparing original 512^3 with ", zarr_group_path)
         for var in original_subarray.data_vars:
-            # Prepare Dask arrays
-            original_data_array = original_subarray[var].data
-            zarr_data_array = da.from_zarr(zarr_group[var])
-
-            # Load both arrays in parallel since they live on different fileDB nodes
-            original_data, zarr_data = da.compute(original_data_array, zarr_data_array)
-
-            assert_eq(original_data, zarr_data)
+            assert_eq(original_subarray[var].data, da.from_zarr(zarr_group[var]))
             if config['general_settings']['verbose']:
                 print(var, " OK")
 
