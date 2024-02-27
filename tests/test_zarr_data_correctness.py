@@ -75,7 +75,7 @@ class VerifyZarrDataCorrectness(unittest.TestCase):
             original_data_array = original_subarray[var].data
             zarr_data_array = da.from_zarr(zarr_group[var])
 
-            # Load and compare arrays for this test case
+            # Load both arrays in parallel since they live on different fileDB nodes
             original_data, zarr_data = da.compute(original_data_array, zarr_data_array)
 
             assert_eq(original_data, zarr_data)
