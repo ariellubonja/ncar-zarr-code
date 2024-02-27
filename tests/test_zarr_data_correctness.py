@@ -47,14 +47,8 @@ def generate_data_correctness_tests():
         destination_paths, chunk_morton_order = dataset.get_zarr_array_destinations(timestep, range_list)
 
         for original_data_cube, written_zarr_cube, morton_idx in zip(lazy_zarr_cubes, destination_paths, chunk_morton_order.values()):
-            start_coords = write_utils.morton_unpack(2048, morton_idx[0])
-            end_coords = write_utils.morton_unpack(2048, morton_idx[1])
-
-            sub_array = original_data_cube.sel(nnx=slice(start_coords[0], end_coords[0] + 1),
-                                       nny=slice(start_coords[1], end_coords[1] + 1),
-                                       nnz=slice(start_coords[2], end_coords[2] + 1))
-
-            test_params.append((sub_array, written_zarr_cube))
+            # no need to .sel(). Original subcube should already be selected
+            test_params.append((original_data_cube, written_zarr_cube))
 
     print("Done generating tests. Len of test_params: ", len(test_params))
     return test_params
