@@ -119,3 +119,7 @@ After setting the environment variables, run the tests using the unittest module
 > python -m unittest tests/test_zarr_data_correctness.py
 
 The tests will automatically read the environment variables and run the data correctness checks for the specified dataset and timesteps.
+
+To run the tests in parallel, use `pytest-xdist` (needs to be `pip install`-ed) as follows:
+
+> python -m pytest tests/test_zarr_data_correctness.py
