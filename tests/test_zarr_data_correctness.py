@@ -64,13 +64,21 @@ class VerifyZarrDataCorrectness(unittest.TestCase):
         the original data file (NCAR NetCDF)
 
         Args:
-            original_subarray (xarray.Dataset): (Sub)Array of original data that was written as zarr to zar_group_path
+            original_subarray (xarray.Dataset): (Sub)Array of original data that was written as zarr to zarr_group_path
             zarr_group_path (str): Location of the sub-chunked data as a Zarr Group
         '''
         zarr_group = zarr.open_group(zarr_group_path, mode='r')
-        print("Comparing original 512^3 with ", zarr_group_path)
+        print("Comparing original data with ", zarr_group_path)
+
         for var in original_subarray.data_vars:
-            assert_eq(original_subarray[var].data, da.from_zarr(zarr_group[var]))
+            # Prepare Dask arrays
+            original_data_array = original_subarray[var].data
+            zarr_data_array = da.from_zarr(zarr_group[var])
+
+            # Load and compare arrays for this test case
+            original_data, zarr_data = da.compute(original_data_array, zarr_data_array)
+
+            assert_eq(original_data, zarr_data)
             if config['general_settings']['verbose']:
                 print(var, " OK")
 
