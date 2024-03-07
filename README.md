@@ -122,4 +122,31 @@ The tests will automatically read the environment variables and run the data cor
 
 To run the tests in parallel, use `pytest-xdist` (needs to be `pip install`-ed) as follows:
 
-> python -m pytest tests/test_zarr_data_correctness.py
+```
+export DATASET="NCAR-High-Rate-1"
+export START_TIMESTEP=47
+export END_TIMESTEP=47
+export PROD_OR_BACKUP=prod
+
+cd /home/idies/workspace/Storage/ariel4/persistent/zarrify-across-network
+../zarr-py3.11/bin/python -m pytest -n 34 tests/test_zarr_data_correctness.py
+```
+
+To run tests for multiple timesteps, use:
+
+```
+export DATASET="NCAR-Low-Rate"
+export PROD_OR_BACKUP=prod
+cd /home/idies/workspace/Storage/ariel4/persistent/zarrify-across-network
+
+# Iterate from timestep 1 to 10
+for timestep in {1..10}
+do
+    # Set START_TIMESTEP and END_TIMESTEP for the current iteration
+    export START_TIMESTEP=$timestep
+    export END_TIMESTEP=$timestep
+
+    # Run the python script
+    ../zarr-py3.11/bin/python -m pytest -n 34 tests/test_zarr_data_correctness.py
+done
+```
