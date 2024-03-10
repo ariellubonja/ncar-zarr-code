@@ -7,7 +7,6 @@ import os
 from parameterized import parameterized
 
 from src.dataset import NCAR_Dataset
-from src.utils import write_utils
 
 
 config = {}
