@@ -1,3 +1,12 @@
+"""
+Ariel Lubonja
+2024-01-10
+
+Check whether the written NCAR data is correct by comparing the
+original data with the written Zarr data.
+Tests in the range [start_timestep, end_timestep].
+"""
+
 import unittest
 import zarr
 from dask.array.utils import assert_eq
