@@ -164,17 +164,12 @@ cd /home/idies/workspace/Storage/ariel4/persistent/zarrify-across-network
 #### Zarr Attributes Test
 
 - Check whether the Zarr attributes (compression, encoding, etc.) are as desired
+for all NCAR timesteps. Only need to specify whether `prod` or `back` copy
 
 In SciServer, can run this as a Small job, since it's very quick
 
 ```
-# Change to NCAR-High-Rate-1, NCAR-High-Rate-2 or NCAR-Low-Rate
-# See config.yaml for the list of available datasets
-export DATASET="NCAR-Low-Rate"
 export PROD_OR_BACKUP=prod
-# Set START_TIMESTEP and END_TIMESTEP for the current iteration
-export START_TIMESTEP=40
-export END_TIMESTEP=49
 
 cd /home/idies/workspace/Storage/ariel4/persistent/zarrify-across-network
 
