@@ -1,6 +1,6 @@
 """
 Ariel Lubonja
-2024-03-10
+2024-01-10
 
 Check the integrity of the original NCAR data by comparing the
 SHA-256 hash of the files with the expected hash contained in hash.txt
@@ -39,7 +39,6 @@ def generate_hash_tests():
     # Load YAML configuration
     global config, dataset_name
 
-    test_params = []
     dataset_config = config['datasets'][dataset_name]
     write_config = config['write_settings']
     dataset = NCAR_Dataset(
