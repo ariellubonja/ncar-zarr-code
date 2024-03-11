@@ -3,7 +3,7 @@ Ariel Lubonja
 2024-01-10
 
 Checks whether the written NCAR data has the correct Zarr attributes
-Tests whole folders at a time. Only need to specify DATASET env var.
+Tests all NCAR Datasets. Only need to specify prod/back
 """
 
 import unittest
@@ -18,31 +18,27 @@ from src.dataset import NCAR_Dataset
 config = {}
 with open('tests/config.yaml', 'r') as file:
     config = yaml.safe_load(file)
-dataset_name = os.environ.get('DATASET', 'NCAR-High-Rate-1')
-start_timestep = int(os.environ.get('START_TIMESTEP', 40))
-end_timestep = int(os.environ.get('END_TIMESTEP', 50))
 prod_or_backup = str(os.environ.get('PROD_OR_BACKUP', 'prod'))
 
 
 # Cannot call class method using Parameterized, so have to add this fn. outside the class
 def generate_attribute_tests():
     # Access the global configuration variable
-    global config, dataset_name
-
-    dataset_config = config['datasets'][dataset_name]
-    write_config = config['write_settings']
-    dataset = NCAR_Dataset(
-        name=dataset_config['name'],
-        location_path=dataset_config['location_path'],
-        desired_zarr_chunk_size=write_config['desired_zarr_chunk_length'],
-    desired_zarr_array_length=write_config['desired_zarr_array_length'],
-    prod_or_backup='prod',
-        start_timestep=dataset_config['start_timestep'],
-        end_timestep=dataset_config['end_timestep']
-    )
+    global config, prod_or_backup
 
     test_params = []
     for dataset_name, dataset_config in config['datasets'].items():
+        dataset_config = config['datasets'][dataset_name]
+        write_config = config['write_settings']
+        dataset = NCAR_Dataset(
+            name=dataset_config['name'],
+            location_path=dataset_config['location_path'],
+            desired_zarr_chunk_size=write_config['desired_zarr_chunk_length'],
+            desired_zarr_array_length=write_config['desired_zarr_array_length'],
+            prod_or_backup='prod',
+            start_timestep=dataset_config['start_timestep'],
+            end_timestep=dataset_config['end_timestep']
+        )
         for timestep in range(dataset_config['start_timestep'], dataset_config['end_timestep'] + 1):
             test_params.append((dataset, timestep))
 
