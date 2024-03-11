@@ -1,45 +1,58 @@
+"""
+Ariel Lubonja
+2024-01-10
+
+Checks whether the written NCAR data has the correct Zarr attributes
+Tests whole folders at a time. Only need to specify DATASET env var.
+"""
+
 import unittest
 import zarr
 import yaml
 from parameterized import parameterized
+import os
 
 from src.dataset import NCAR_Dataset
 
 
 config = {}
+with open('tests/config.yaml', 'r') as file:
+    config = yaml.safe_load(file)
+dataset_name = os.environ.get('DATASET', 'NCAR-High-Rate-1')
+start_timestep = int(os.environ.get('START_TIMESTEP', 40))
+end_timestep = int(os.environ.get('END_TIMESTEP', 50))
+prod_or_backup = str(os.environ.get('PROD_OR_BACKUP', 'prod'))
 
 
 # Cannot call class method using Parameterized, so have to add this fn. outside the class
-def generate_timestep_tests():
+def generate_attribute_tests():
     # Access the global configuration variable
-    global config
-    with open('tests/config.yaml', 'r') as file:
-        config = yaml.safe_load(file)
+    global config, dataset_name
+
+    dataset_config = config['datasets'][dataset_name]
+    write_config = config['write_settings']
+    dataset = NCAR_Dataset(
+        name=dataset_config['name'],
+        location_path=dataset_config['location_path'],
+        desired_zarr_chunk_size=write_config['desired_zarr_chunk_length'],
+    desired_zarr_array_length=write_config['desired_zarr_array_length'],
+    prod_or_backup='prod',
+        start_timestep=dataset_config['start_timestep'],
+        end_timestep=dataset_config['end_timestep']
+    )
 
     test_params = []
     for dataset_name, dataset_config in config['datasets'].items():
         for timestep in range(dataset_config['start_timestep'], dataset_config['end_timestep'] + 1):
-            test_params.append((dataset_name, timestep))
+            test_params.append((dataset, timestep))
+
     return test_params
 
 
 class VerifyNCARZarrAttributes(unittest.TestCase):
     # Cannot have setUp or setupClass because they don't work with Parameterized
-
-    @parameterized.expand(generate_timestep_tests)
-    def test_individual_timestep(self, dataset_name, timestep):
-        dataset_config = config['datasets'][dataset_name]
-        write_config = config['write_settings']
-        dataset = NCAR_Dataset(
-            name=dataset_config['name'],
-            location_path=dataset_config['location_path'],
-            desired_zarr_chunk_size=write_config['desired_zarr_chunk_length'],
-            desired_zarr_array_length=write_config['desired_zarr_chunk_length'],
-            prod_or_backup=write_config['prod_or_backup'],
-            start_timestep=dataset_config['start_timestep'],
-            end_timestep=dataset_config['end_timestep']
-        )
-
+    @parameterized.expand(generate_attribute_tests)
+    def test_individual_timestep(self, dataset, timestep):
         _, range_list = dataset.transform_to_zarr(timestep)
         destination_paths = dataset.get_zarr_array_destinations(timestep, range_list)
 
