@@ -114,39 +114,68 @@ set END_TIMESTEP=2
 ```
 ### Running the Tests
 
-After setting the environment variables, run the tests using the unittest module:
+#### Data Correctness Test
 
-> python -m unittest tests/test_zarr_data_correctness.py
+- Check whether the written data matches the original by manually 
+comparing all arrays
 
-The tests will automatically read the environment variables and run the data correctness checks for the specified dataset and timesteps.
-
-To run the tests in parallel, use `pytest-xdist` (needs to be `pip install`-ed) as follows:
-
-```
-export DATASET="NCAR-High-Rate-1"
-export START_TIMESTEP=47
-export END_TIMESTEP=47
-export PROD_OR_BACKUP=prod
-
-cd /home/idies/workspace/Storage/ariel4/persistent/zarrify-across-network
-../zarr-py3.11/bin/python -m pytest -n 34 tests/test_zarr_data_correctness.py
-```
-
-To run tests for multiple timesteps, use:
+Use `pytest-xdist` (needs to be `pip install`-ed) as follows:
 
 ```
+# Change to NCAR-High-Rate-1, NCAR-High-Rate-2 or NCAR-Low-Rate
+# See config.yaml for the list of available datasets
 export DATASET="NCAR-Low-Rate"
 export PROD_OR_BACKUP=prod
 cd /home/idies/workspace/Storage/ariel4/persistent/zarrify-across-network
 
-# Iterate from timestep 1 to 10
-for timestep in {1..10}
+# Done this way to prevent pytest from spawning too many threads and 
+#   running out of memory 
+for timestep in {1..10}  # Change as desired
 do
     # Set START_TIMESTEP and END_TIMESTEP for the current iteration
     export START_TIMESTEP=$timestep
     export END_TIMESTEP=$timestep
 
-    # Run the python script
+    # Run the pytest in parallel with 34 threads
     ../zarr-py3.11/bin/python -m pytest -n 34 tests/test_zarr_data_correctness.py
 done
+```
+
+#### Hash Integrity Test
+
+- Check whether the hash of the original data matches the given hash.txt
+
+This test case checks all timesteps in the given dataset folder, so no 
+need to specify `start_timestep` and `end_timestep`.
+
+```
+# Change to NCAR-High-Rate-1, NCAR-High-Rate-2 or NCAR-Low-Rate
+# See config.yaml for the list of available datasets
+export DATASET="NCAR-High-Rate-2"
+export PROD_OR_BACKUP=prod
+cd /home/idies/workspace/Storage/ariel4/persistent/zarrify-across-network
+
+../zarr-py3.11/bin/python -m pytest -n 5 tests/test_hash_integrity.py
+```
+
+
+#### Zarr Attributes Test
+
+- Check whether the Zarr attributes (compression, encoding, etc.) are as desired
+
+In SciServer, can run this as a Small job, since it's very quick
+
+```
+# Change to NCAR-High-Rate-1, NCAR-High-Rate-2 or NCAR-Low-Rate
+# See config.yaml for the list of available datasets
+export DATASET="NCAR-Low-Rate"
+export PROD_OR_BACKUP=prod
+# Set START_TIMESTEP and END_TIMESTEP for the current iteration
+export START_TIMESTEP=40
+export END_TIMESTEP=49
+
+cd /home/idies/workspace/Storage/ariel4/persistent/zarrify-across-network
+
+# Run the pytest in parallel with 34 threads
+../zarr-py3.11/bin/python -m pytest -n 34 tests/test_zarr_attributes.py
 ```
