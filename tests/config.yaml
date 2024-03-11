@@ -15,7 +15,7 @@ datasets:
     name: sabl2048b
     location_path: /home/idies/workspace/turb/data02_03/ncar-high-rate-fixed-dt/
     start_timestep: 50
-    end_timestep: 99
+    end_timestep: 104
   NCAR-Low-Rate:
     name: sabl2048a
     location_path: /home/idies/workspace/turb/data02_02/ncar-low-rate-fixed-dt
