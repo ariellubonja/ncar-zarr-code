@@ -11,6 +11,7 @@ import dask
 import glob
 import os
 import re
+import warnings
 
 
 class Dataset(ABC):
@@ -91,7 +92,8 @@ class Dataset(ABC):
 
     def distribute_to_filedb(self, NUM_THREADS=34):
         '''
-        Distribute the dataset to FileDB using Ryan Hausen's node_assignment() node coloring alg.
+        Write the production copy of the dataset to FileDB using Ryan
+        Hausen's node_assignment() node coloring alg.
 
         Args:
             NUM_THREADS (int): Number of threads to use when writing to disk. Currently 34 to match nr. of disks on
@@ -122,6 +124,27 @@ class Dataset(ABC):
 
             for t in threads:  # Wait for all threads to finish
                 t.join()
+
+
+    def create_backup_copy(self, NUM_THREADS=34):
+        '''
+        Write the backup copy of the dataset to FileDB, and shift
+        the nodes by one, so prod and backup copies live on different
+        disks. Make sure `prod` data is correct by running the tests/
+        before running this function!
+
+        Args:
+            NUM_THREADS (int): Number of threads to use when writing to
+            disk. Currently 34 to match nr. of disks on FileDB
+        '''
+
+        warnings.warn("Make sure the production dataset is "
+                      "correct! This function simply copies the production "
+                      "dataset and offsets it by one disk! Errors in `prod` will be"
+                      "propagated. Make sure to run all tests before creating "
+                      "this backup copy!", Warning)
+
+        raise NotImplementedError
 
 
 class NCAR_Dataset(Dataset):
