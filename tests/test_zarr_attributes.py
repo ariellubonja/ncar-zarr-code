@@ -67,7 +67,7 @@ class VerifyNCARZarrAttributes(unittest.TestCase):
             expected_shape = (512, 512, 512, 3) if var == "velocity" else (512, 512, 512, 1)
             self.assertEqual(zarr_512[var].shape, expected_shape)
 
-        if config['verbose']:
+        if config['general_settings']['verbose']:
             print("Cube dimension = (512, 512, 512, x),  for all variables in ", zarr_512_path)
 
     def verify_zarr_chunk_sizes(self, zarr_512, zarr_512_path):
@@ -75,12 +75,12 @@ class VerifyNCARZarrAttributes(unittest.TestCase):
             expected_chunksize = (64, 64, 64, 3) if var == "velocity" else (64, 64, 64, 1)
             self.assertEqual(zarr_512[var].chunks, expected_chunksize)
 
-        if config['verbose']:
+        if config['general_settings']['verbose']:
             print("Chunk sizes = (64, 64, 64, x),  for all variables in ", zarr_512_path)
 
     def verify_zarr_compression(self, zarr_512, zarr_512_path):
         for var in zarr_512.array_keys():
             self.assertIsNone(zarr_512[var].compressor)  # TODO get from config.yaml
 
-        if config['verbose']:
+        if config['general_settings']['verbose']:
             print("Compression is None for all variables in ", zarr_512_path)
