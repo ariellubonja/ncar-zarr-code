@@ -154,7 +154,6 @@ need to specify `start_timestep` and `end_timestep`.
 # Change to NCAR-High-Rate-1, NCAR-High-Rate-2 or NCAR-Low-Rate
 # See config.yaml for the list of available datasets
 export DATASET="NCAR-High-Rate-2"
-export PROD_OR_BACKUP=prod
 cd /home/idies/workspace/Storage/ariel4/persistent/zarrify-across-network
 
 ../zarr-py3.11/bin/python -m pytest -n 5 tests/test_hash_integrity.py
