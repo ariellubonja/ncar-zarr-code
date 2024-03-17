@@ -5,6 +5,7 @@ import re
 import subprocess
 import sys
 from itertools import product
+import shutil
 
 import dask.array as da
 import numpy as np
@@ -239,6 +240,22 @@ def write_to_disk(q):
             # Therefore the code will stall the SciServer Job even though it's done
             if processed:
                 q.task_done()
+
+
+def copy_folder(source, destination):
+    try:
+        # Delete the destination folder if it already exists
+        if os.path.exists(destination):
+            shutil.rmtree(destination)
+            print(f"Deleted existing destination folder: {destination}")
+
+        # Copy the contents of the source folder to the destination
+        shutil.copytree(source, destination)
+        print(f"Copied from {source} to {destination}")
+
+    except Exception as e:
+        print(f"Error copying from {source} to {destination}")
+        print(e)
 
 
 def get_sharding_queue(dataset):
