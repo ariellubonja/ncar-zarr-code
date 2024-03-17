@@ -19,7 +19,7 @@ from src.dataset import NCAR_Dataset
 
 
 config = {}
-with open('/Users/ariellubonja/prog/zarrify-across-network/tests/config.yaml', 'r') as file:
+with open('tests/config.yaml', 'r') as file:
     config = yaml.safe_load(file)
 dataset_name = os.environ.get('DATASET', 'NCAR-High-Rate-1')
 start_timestep = int(os.environ.get('START_TIMESTEP', 40))
@@ -73,7 +73,7 @@ class VerifyZarrDataCorrectness(unittest.TestCase):
         the original data file (NCAR NetCDF)
 
         Args:
-            original_subarray (xarray.Dataset): (Sub)Array of original data that was written as zarr to zar_group_path
+            original_subarray (xarray.Dataset): (Sub)Array of original data that was written as zarr to zarr_group_path
             zarr_group_path (str): Location of the sub-chunked data as a Zarr Group
         '''
         zarr_group = zarr.open_group(zarr_group_path, mode='r')

@@ -37,9 +37,16 @@ This code is located in `src/utils/write_utils.py:node_assignment()`
 The function takes in the number of nodes and the number of batches and returns a list of lists, where each sublist contains the node assignments for a batch. The current implementation uses the [Node/Map Coloring algorithm](https://en.wikipedia.org/wiki/Graph_coloring#Node_coloring) to assign nodes to batches. You can modify this function to implement your own node assignment schema.
 
 
-### Running the Script
+### Writing New Data to FileDB
 
-Run `main.py` with the necessary arguments to initiate the process of converting and distributing data. The script requires the timestep, path to the input Xarray-compatible files, and other optional parameters.
+Run `main.py` as follows to distribute the data across the FileDB nodes:
+
+
+```
+cd /home/idies/workspace/Storage/ariel4/persistent/zarrify-across-network
+
+../zarr-py3.11/bin/python -m src.main --distribution prod -n sabl2048b -p /home/idies/workspace/turb/data02_02/ncar-high-rate-fixed-dt -st 48 -et 49
+```
 
 
 Command-Line Arguments:
@@ -52,21 +59,19 @@ Command-Line Arguments:
 - --distribution: Type of distribution - "prod" for production or "back" for backup. Defaults to "prod".
 [//]: # (- --zarr_encoding: Boolean flag to enable custom Zarr encoding. Currently not implemented. Defaults to True.)
 
-
-Example Command:
-
-> python -m src.main -p /path/to/ncar/netcdf/files/jhd.000.nc -n sabl2048a
-
-
-##### Notes
+##### A Few Things to Note
 
 - Input must be [Xarray-compatible](https://docs.xarray.dev/en/stable/generated/xarray.Dataset.html)
+
+- Use SciServer Large Job for writing, since it takes ~2-3h to write one 
+NCAR timestep. Limit to 3-4 timesteps for job, as 16h+ jobs will get canceled.
+Remember `start_timestep` and `end_timestep` are inclusive.
 
 - The script currently does not implement a custom Zarr encoding choice. It currently uses `Compression=None`. Please edit `dataset.py` to modify encoding parameters.
 
 - The script reads the Timestep from the input file name 
 
-- Optimal Zarr chunk size has been found to be 64^3 by Mike Schnaubern and Ryan Hausen. This is the default chunk size.
+- Optimal Zarr chunk size has been found to be $64^3$ by Mike Schnaubern and Ryan Hausen. This is the default chunk size.
 
 - I've found that using Dask's local dir (`dask_local_dir='/home/idies/workspace/turb/data02_02', n_dask_workers=4)` is slower than not.
 
@@ -74,9 +79,6 @@ Example Command:
 
 
 [//]: # (If you need to adapt the destination layout for Zarr files or change the node assignment schema in this repository, you can do so by editing specific functions within `utils/write_utils.py`. Below are guidelines on where and how to make these changes:)
-
-#### Need Further Assistance?
-If you encounter difficulties or have specific questions about customizing the code for your use case, please feel free to open an issue in the repository. We're here to help and would be happy to assist you in adapting the tool to your specific needs.
 
 
 ### Workflow Overview
@@ -114,8 +116,62 @@ set END_TIMESTEP=2
 ```
 ### Running the Tests
 
-After setting the environment variables, run the tests using the unittest module:
+#### Data Correctness Test
 
-> python -m unittest tests/test_zarr_data_correctness.py
+- Check whether the written data matches the original by manually 
+comparing all arrays
 
-The tests will automatically read the environment variables and run the data correctness checks for the specified dataset and timesteps.
+Use `pytest-xdist` (needs to be `pip install`-ed) as follows:
+
+```
+# Change to NCAR-High-Rate-1, NCAR-High-Rate-2 or NCAR-Low-Rate
+# See config.yaml for the list of available datasets
+export DATASET="NCAR-Low-Rate"
+export PROD_OR_BACKUP=prod
+cd /home/idies/workspace/Storage/ariel4/persistent/zarrify-across-network
+
+# Done this way to prevent pytest from spawning too many threads and 
+#   running out of memory 
+for timestep in {1..10}  # Change as desired
+do
+    # Set START_TIMESTEP and END_TIMESTEP for the current iteration
+    export START_TIMESTEP=$timestep
+    export END_TIMESTEP=$timestep
+
+    # Run the pytest in parallel with 34 threads
+    ../zarr-py3.11/bin/python -m pytest -n 34 tests/test_zarr_data_correctness.py
+done
+```
+
+#### Hash Integrity Test
+
+- Check whether the hash of the original data matches the given hash.txt
+
+This test case checks all timesteps in the given dataset folder, so no 
+need to specify `start_timestep` and `end_timestep`.
+
+```
+# Change to NCAR-High-Rate-1, NCAR-High-Rate-2 or NCAR-Low-Rate
+# See config.yaml for the list of available datasets
+export DATASET="NCAR-High-Rate-2"
+cd /home/idies/workspace/Storage/ariel4/persistent/zarrify-across-network
+
+../zarr-py3.11/bin/python -m pytest -n 5 tests/test_hash_integrity.py
+```
+
+
+#### Zarr Attributes Test
+
+- Check whether the Zarr attributes (compression, encoding, etc.) are as desired
+for all NCAR timesteps. Only need to specify whether `prod` or `back` copy
+
+In SciServer, can run this as a Small job, since it's very quick
+
+```
+export PROD_OR_BACKUP=prod
+
+cd /home/idies/workspace/Storage/ariel4/persistent/zarrify-across-network
+
+# Run the pytest in parallel with 34 threads
+../zarr-py3.11/bin/python -m pytest -n 34 tests/test_zarr_attributes.py
+```

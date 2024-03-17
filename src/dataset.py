@@ -11,6 +11,7 @@ import dask
 import glob
 import os
 import re
+import warnings
 
 
 class Dataset(ABC):
@@ -23,8 +24,8 @@ class Dataset(ABC):
     ----------
     name : str
         The name of the dataset
-    location_path : str
-        Path to the directory containing Xarray-compatible files to be Zarrified and distributed to FileDB. One file
+    location_paths : list(str)
+        Path to the directories containing Xarray-compatible files to be Zarrified and distributed to FileDB. One file
          in the directory should belong to one timestep of the data
     desired_zarr_chunk_size : int
         The chunk size to be used when writing to Zarr
@@ -43,10 +44,10 @@ class Dataset(ABC):
         Distributes the dataset to FileDB using Ryan Hausen's node_assignment() node coloring alg.
     """
 
-    def __init__(self, name, location_path, desired_zarr_chunk_size, desired_zarr_array_length, prod_or_backup,
+    def __init__(self, name, location_paths, desired_zarr_chunk_size, desired_zarr_array_length, prod_or_backup,
                  start_timestep, end_timestep):
         self.name = name
-        self.location_path = location_path  # List of paths
+        self.location_paths = location_paths  # List of paths
         self.desired_zarr_chunk_size = desired_zarr_chunk_size
         self.desired_zarr_array_length = desired_zarr_array_length
         self.prod_or_backup = prod_or_backup
@@ -89,9 +90,10 @@ class Dataset(ABC):
         """
         raise NotImplementedError("Subclasses must implement this method")
 
-    def distribute_to_filedb(self, NUM_THREADS=1):
+    def distribute_to_filedb(self, NUM_THREADS=34):
         '''
-        Distribute the dataset to FileDB using Ryan Hausen's node_assignment() node coloring alg.
+        Write the production copy of the dataset to FileDB using Ryan
+        Hausen's node_assignment() node coloring alg.
 
         Args:
             NUM_THREADS (int): Number of threads to use when writing to disk. Currently 34 to match nr. of disks on
@@ -124,6 +126,49 @@ class Dataset(ABC):
                 t.join()
 
 
+    def create_backup_copy(self, NUM_THREADS=34):
+        '''
+        Write the backup copy of the dataset to FileDB, and shift
+        the nodes by one, so prod and backup copies live on different
+        disks. Make sure `prod` data is correct by running the tests/
+        before running this function!
+
+        Args:
+            NUM_THREADS (int): Number of threads to use when writing to
+            disk. Currently 34 to match nr. of disks on FileDB
+        '''
+
+        warnings.warn("Make sure the production dataset is "
+                      "correct! This function simply copies the production "
+                      "dataset and offsets it by one disk! Errors in `prod` will be"
+                      "propagated. Make sure to run all tests before creating "
+                      "this backup copy!", Warning)
+
+
+        for timestep in range(self.start_timestep, self.end_timestep + 1):
+            lazy_zarr_cubes, range_list = self.transform_to_zarr(timestep)
+            destination_paths, _ = self.get_zarr_array_destinations(timestep, range_list)
+
+            q = queue.Queue()
+
+            dests, _ = self.get_zarr_array_destinations(timestep, range_list)
+
+            # Populate the queue with Write to FileDB tasks
+            for i in range(len(dests)):
+                q.put((dests[i], dests[i+1 % NUM_THREADS]))
+
+            threads = []  # Create threads and start them
+            for _ in range(NUM_THREADS):
+                t = threading.Thread(target=write_utils.copy_folder, args=(q,))
+                t.start()
+                threads.append(t)
+
+            q.join()  # Wait for all tasks to be processed
+
+            for t in threads:  # Wait for all threads to finish
+                t.join()
+
+
 class NCAR_Dataset(Dataset):
     """
         National Center for Atmospheric Research (NCAR) 2048^3 dataset.
@@ -137,7 +182,9 @@ class NCAR_Dataset(Dataset):
                          start_timestep, end_timestep)
 
         self.file_extension = '.nc'
-        self.NCAR_files = glob.glob(os.path.join(self.location_path, f'*{self.file_extension}'))
+        self.NCAR_files = []
+        for path in self.location_paths:
+            self.NCAR_files += glob.glob(os.path.join(path, f'*{self.file_extension}'))
         self.original_array_length = 2048
 
     def transform_to_zarr(self, timestep: int) -> tuple[list, list]:
@@ -232,8 +279,8 @@ class NCAR_Dataset(Dataset):
 
         # TODO Hard-coded
         # Avoiding 7-2 and 9-2 - they're too full as of May 2023
-        folders.remove("/Volumes/backup-hdd/ncar/data09_02/zarr/")
-        folders.remove("/Volumes/backup-hdd/ncar/data07_02/zarr/")
+        folders.remove("/home/idies/workspace/turb/data09_02/zarr/")
+        folders.remove("/home/idies/workspace/turb/data07_02/zarr/")
 
         for i in range(len(folders)):
             if self.prod_or_backup == "prod":

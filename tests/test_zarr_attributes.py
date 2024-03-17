@@ -14,8 +14,9 @@ import os
 
 from src.dataset import NCAR_Dataset
 
+
 config = {}
-with open('/Users/ariellubonja/prog/zarrify-across-network/tests/config.yaml', 'r') as file:
+with open('tests/config.yaml', 'r') as file:
     config = yaml.safe_load(file)
 prod_or_backup = str(os.environ.get('PROD_OR_BACKUP', 'prod'))
 
@@ -29,11 +30,15 @@ def generate_attribute_tests():
     for dataset_name, dataset_config in config['datasets'].items():
         dataset_config = config['datasets'][dataset_name]
         write_config = config['write_settings']
-        dataset = NCAR_Dataset(name=dataset_config['name'], location_path=dataset_config['location_path'],
+        dataset = NCAR_Dataset(
+            name=dataset_config['name'],
+            location_path=dataset_config['location_path'],
             desired_zarr_chunk_size=write_config['desired_zarr_chunk_length'],
-            desired_zarr_array_length=write_config['desired_zarr_array_length'], prod_or_backup='prod',
-            start_timestep=dataset_config['start_timestep'], end_timestep=dataset_config['end_timestep'])
-
+            desired_zarr_array_length=write_config['desired_zarr_array_length'],
+            prod_or_backup='prod',
+            start_timestep=dataset_config['start_timestep'],
+            end_timestep=dataset_config['end_timestep']
+        )
         for timestep in range(dataset_config['start_timestep'], dataset_config['end_timestep'] + 1):
             test_params.append((dataset, timestep))
 

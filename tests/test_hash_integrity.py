@@ -17,7 +17,7 @@ from src.dataset import NCAR_Dataset
 
 
 config = {}
-with open('/Users/ariellubonja/prog/zarrify-across-network/tests/config.yaml', 'r') as file:
+with open('tests/config.yaml', 'r') as file:
     config = yaml.safe_load(file)
 dataset_name = os.environ.get('DATASET', 'NCAR-High-Rate-1')
 

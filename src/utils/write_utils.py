@@ -5,6 +5,7 @@ import re
 import subprocess
 import sys
 from itertools import product
+import shutil
 
 import dask.array as da
 import numpy as np
@@ -77,7 +78,7 @@ def split_zarr_group(ds, smaller_size, dims):
     """
 
     # Calculate the number of chunks along each dimension
-    num_chunks = [ds.dims[dim] // smaller_size for dim in dims]
+    num_chunks = [ds.sizes[dim] // smaller_size for dim in dims]
 
     # I want this to be a 3D list of lists
     outer_dim = []
@@ -115,7 +116,7 @@ def split_zarr_group(ds, smaller_size, dims):
 
 
 def list_fileDB_folders():
-    return [f'/Volumes/backup-hdd/ncar/data{str(d).zfill(2)}_{str(f).zfill(2)}/zarr/' for f in range(1, 4) for d in
+    return [f'/home/idies/workspace/turb/data{str(d).zfill(2)}_{str(f).zfill(2)}/zarr/' for f in range(1, 4) for d in
             range(1, 13)]
 
 
@@ -239,6 +240,22 @@ def write_to_disk(q):
             # Therefore the code will stall the SciServer Job even though it's done
             if processed:
                 q.task_done()
+
+
+def copy_folder(source, destination):
+    try:
+        # Delete the destination folder if it already exists
+        if os.path.exists(destination):
+            shutil.rmtree(destination)
+            print(f"Deleted existing destination folder: {destination}")
+
+        # Copy the contents of the source folder to the destination
+        shutil.copytree(source, destination)
+        print(f"Copied from {source} to {destination}")
+
+    except Exception as e:
+        print(f"Error copying from {source} to {destination}")
+        print(e)
 
 
 def get_sharding_queue(dataset):
