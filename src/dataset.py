@@ -144,7 +144,29 @@ class Dataset(ABC):
                       "propagated. Make sure to run all tests before creating "
                       "this backup copy!", Warning)
 
-        raise NotImplementedError
+
+        for timestep in range(self.start_timestep, self.end_timestep + 1):
+            lazy_zarr_cubes, range_list = self.transform_to_zarr(timestep)
+            destination_paths, _ = self.get_zarr_array_destinations(timestep, range_list)
+
+            q = queue.Queue()
+
+            dests, _ = self.get_zarr_array_destinations(timestep, range_list)
+
+            # Populate the queue with Write to FileDB tasks
+            for i in range(len(dests)):
+                q.put((dests[i], dests[i+1 % NUM_THREADS]))
+
+            threads = []  # Create threads and start them
+            for _ in range(NUM_THREADS):
+                t = threading.Thread(target=write_utils.copy_folder, args=(q,))
+                t.start()
+                threads.append(t)
+
+            q.join()  # Wait for all tasks to be processed
+
+            for t in threads:  # Wait for all threads to finish
+                t.join()
 
 
 class NCAR_Dataset(Dataset):
