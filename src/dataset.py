@@ -24,8 +24,8 @@ class Dataset(ABC):
     ----------
     name : str
         The name of the dataset
-    location_path : str
-        Path to the directory containing Xarray-compatible files to be Zarrified and distributed to FileDB. One file
+    location_paths : list(str)
+        Path to the directories containing Xarray-compatible files to be Zarrified and distributed to FileDB. One file
          in the directory should belong to one timestep of the data
     desired_zarr_chunk_size : int
         The chunk size to be used when writing to Zarr
@@ -44,10 +44,10 @@ class Dataset(ABC):
         Distributes the dataset to FileDB using Ryan Hausen's node_assignment() node coloring alg.
     """
 
-    def __init__(self, name, location_path, desired_zarr_chunk_size, desired_zarr_array_length, prod_or_backup,
+    def __init__(self, name, location_paths, desired_zarr_chunk_size, desired_zarr_array_length, prod_or_backup,
                  start_timestep, end_timestep):
         self.name = name
-        self.location_path = location_path  # List of paths
+        self.location_paths = location_paths  # List of paths
         self.desired_zarr_chunk_size = desired_zarr_chunk_size
         self.desired_zarr_array_length = desired_zarr_array_length
         self.prod_or_backup = prod_or_backup
@@ -182,7 +182,9 @@ class NCAR_Dataset(Dataset):
                          start_timestep, end_timestep)
 
         self.file_extension = '.nc'
-        self.NCAR_files = glob.glob(os.path.join(self.location_path, f'*{self.file_extension}'))
+        self.NCAR_files = []
+        for path in self.location_paths:
+            self.NCAR_files += glob.glob(os.path.join(path, f'*{self.file_extension}'))
         self.original_array_length = 2048
 
     def transform_to_zarr(self, timestep: int) -> tuple[list, list]:
