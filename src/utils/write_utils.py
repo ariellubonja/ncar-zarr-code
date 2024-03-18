@@ -116,8 +116,15 @@ def split_zarr_group(ds, smaller_size, dims):
 
 
 def list_fileDB_folders():
-    return [f'/home/idies/workspace/turb/data{str(d).zfill(2)}_{str(f).zfill(2)}/zarr/' for f in range(1, 4) for d in
-            range(1, 13)]
+    base_dir = '/Volumes/backup-hdd/ncar/'
+    filedb_folders = [os.path.join(base_dir, f'data{str(d).zfill(2)}_{str(f).zfill(2)}/zarr/') for f in range(1, 4)
+                      for d in range(1, 13)]
+    # Hard-coded - TODO better solution?
+    # Avoiding 7-2 and 9-2 - they're too full as of May 2023
+    filedb_folders.remove(os.path.join(base_dir, "data09_02/zarr/"))
+    filedb_folders.remove(os.path.join(base_dir, "data07_02/zarr/"))
+
+    return filedb_folders
 
 
 def merge_velocities(transposed_ds, chunk_size_base=64):
