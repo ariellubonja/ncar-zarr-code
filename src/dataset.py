@@ -133,7 +133,7 @@ class Dataset(ABC):
         Write the backup copy of the dataset to FileDB, and shift
         the nodes by one, so prod and backup copies live on different
         disks. Make sure `prod` data is correct by running the tests/
-        before running this function!
+        before running this function! Modified from ChatGPT
 
         Args:
             NUM_THREADS (int): Number of threads to use when writing to
@@ -146,8 +146,25 @@ class Dataset(ABC):
                       "propagated. Make sure to run all tests before creating "
                       "this backup copy!", Warning)
 
+        def worker(q):
+            """Thread worker function to copy directories and overwrite existing ones."""
+            while True:
+                try:
+                    src_path, dest_path = q.get_nowait()
+                    print(f"Copying {src_path} to {dest_path}")
+                    # Check if the destination path exists and remove it if it does
+                    if os.path.exists(dest_path):
+                        shutil.rmtree(dest_path)
+                    shutil.copytree(src_path, dest_path, dirs_exist_ok=True)
+                    q.task_done()
+                except queue.Empty:
+                    break
+                except Exception as e:
+                    print(f"Error copying {src_path} to {dest_path}: {e}")
+                    q.task_done()
 
         filedb_folders = write_utils.list_fileDB_folders()
+        q = queue.Queue()
 
         for i in range(len(filedb_folders)):
             current_dir = filedb_folders[i]
@@ -160,39 +177,57 @@ class Dataset(ABC):
                     # Replace '_prod' with '_back' in folder name
                     dest_folder = folder.replace('_prod', '_back')
                     dest_path = os.path.join(next_dir, dest_folder)
+                    q.put((src_path, dest_path))
 
-                    # Copy directory
-                    print(f"Copying {src_path} to {dest_path}")
-                    shutil.copytree(src_path, dest_path)
+        threads = []
+        for _ in range(NUM_THREADS):
+            t = threading.Thread(target=worker, args=(q,))
+            t.start()
+            threads.append(t)
+
+        q.join()  # Block until all tasks are done
+
+        for t in threads:
+            t.join()  # Make sure all threads have finished
 
         print("Backup creation completed.")
 
 
-    def delete_backup_directories(self):
+    def delete_backup_directories(self, NUM_THREADS=34):
         """
-        Deletes directories that match the pattern 'datasetname_xx_back' within the specified folders
-        after user confirmation.
+        Deletes directories that match 'sabl2048a_xx_back' in parallel using threading.
+        Modified from ChatGPT
 
         Args:
-        filedb_folders (list of str): List of folder paths to search for directories to delete.
+            filedb_folders (list of str): List of folders where directories are to be deleted.
+            num_threads (int): Number of threads to use for parallel deletion.
         """
         filedb_folders = write_utils.list_fileDB_folders()
-        to_delete = []  # List to hold directories to be deleted
 
-        # Gather directories to delete
+        def directory_deleter(q):
+            """ Thread worker function to delete directories. """
+            while not q.empty():
+                try:
+                    path = q.get_nowait()
+                    print(f"Deleting directory: {path}")
+                    shutil.rmtree(path)
+                    q.task_done()
+                except queue.Empty:
+                    break
+                except Exception as e:
+                    print(f"Failed to delete {path}: {e}")
+                    q.task_done()
+
+        to_delete = []
+        q = queue.Queue()
+
+        # Collect all directories to delete
         for folder in filedb_folders:
-            if not os.path.exists(folder):
-                print(f"Folder does not exist: {folder}")
-                continue
-
-            try:
-                subfolders = os.listdir(folder)
-                for subfolder in subfolders:
+            if os.path.exists(folder):
+                for subfolder in os.listdir(folder):
                     if self.name in subfolder and subfolder.endswith('_back'):
                         full_path = os.path.join(folder, subfolder)
                         to_delete.append(full_path)
-            except Exception as e:
-                print(f"An error occurred while listing directories in {folder}: {e}")
 
         # Display directories to be deleted and ask for user confirmation
         if not to_delete:
@@ -207,11 +242,20 @@ class Dataset(ABC):
         response = input("\nAre you sure you want to delete these directories? This cannot be undone. Y/N: ")
         if response.lower() == 'y':
             for path in to_delete:
-                try:
-                    print(f"\nDeleting directory: {path}")
-                    shutil.rmtree(path)
-                except Exception as e:
-                    print(f"Failed to delete {path}: {e}")
+                q.put(path)
+
+            threads = []
+            # Start threads
+            for _ in range(NUM_THREADS):
+                t = threading.Thread(target=directory_deleter, args=(q,))
+                t.start()
+                threads.append(t)
+
+            q.join()  # Wait for the queue to be empty
+
+            for t in threads:  # Ensure all threads have finished
+                t.join()
+
             print("Deletion completed.")
         else:
             print("Deletion aborted by user.")
