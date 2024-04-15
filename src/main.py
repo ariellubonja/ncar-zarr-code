@@ -17,8 +17,8 @@ if __name__ == "__main__":
                              'from config.yaml is used. Deprecated. Modify config.yaml instead.',
                         required=False)
 
-    parser.add_argument('--distribution', type=str, choices=['prod', 'back'], required=True,
-                        help='Whether distribution should be "prod" for production or "back" for backup')
+    parser.add_argument('--write_mode', type=str, choices=['prod', 'back', 'delete_back'], required=True,
+                        help='Whether distribution should be "prod" for production or "back" for backup or "delete_back" to delete backups')
     parser.add_argument('-zc', '--zarr_chunk_size', type=int,
                         help='Zarr chunk size (int)', default=64)
     parser.add_argument('--desired_cube_side', type=int, default=512,
@@ -35,7 +35,7 @@ if __name__ == "__main__":
     LOCATION_PATHS = args.paths
     ZARR_CHUNK_SIDE = args.zarr_chunk_size
     desired_cube_side = args.desired_cube_side
-    PROD_OR_BACKUP = args.distribution
+    WRITE_MODE = args.write_mode
     start_timestep = args.start_timestep
     end_timestep = args.end_timestep
 
@@ -51,11 +51,13 @@ if __name__ == "__main__":
                                 location_path=LOCATION_PATHS,
                                 desired_zarr_chunk_size=ZARR_CHUNK_SIDE,
                                 desired_zarr_array_length=desired_cube_side,
-                                prod_or_backup=PROD_OR_BACKUP,
+                                write_mode=WRITE_MODE,
                                 start_timestep=start_timestep,
                                 end_timestep=end_timestep)
 
-    if PROD_OR_BACKUP == 'prod':
+    if WRITE_MODE == 'prod':
         ncar_dataset.distribute_to_filedb()
-    else:
+    elif WRITE_MODE == 'back':
         ncar_dataset.create_backup_copy()
+    elif WRITE_MODE == 'delete_back':
+        ncar_dataset.delete_backup_directories()

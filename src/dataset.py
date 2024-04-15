@@ -46,13 +46,13 @@ class Dataset(ABC):
         Distributes the dataset to FileDB using Ryan Hausen's node_assignment() node coloring alg.
     """
 
-    def __init__(self, name, location_paths, desired_zarr_chunk_size, desired_zarr_array_length, prod_or_backup,
+    def __init__(self, name, location_paths, desired_zarr_chunk_size, desired_zarr_array_length, write_mode,
                  start_timestep, end_timestep):
         self.name = name
         self.location_paths = location_paths  # List of paths
         self.desired_zarr_chunk_size = desired_zarr_chunk_size
         self.desired_zarr_array_length = desired_zarr_array_length
-        self.prod_or_backup = prod_or_backup
+        self.write_mode = write_mode
         self.original_array_length = None  # Must be populated by subclass method
         self.start_timestep = start_timestep
         self.end_timestep = end_timestep
@@ -224,9 +224,9 @@ class NCAR_Dataset(Dataset):
         This class implements transform_to_zarr(). Please see Dataset superclass for more details
     """
 
-    def __init__(self, name, location_path, desired_zarr_chunk_size, desired_zarr_array_length, prod_or_backup,
+    def __init__(self, name, location_path, desired_zarr_chunk_size, desired_zarr_array_length, write_mode,
                  start_timestep, end_timestep):
-        super().__init__(name, location_path, desired_zarr_chunk_size, desired_zarr_array_length, prod_or_backup,
+        super().__init__(name, location_path, desired_zarr_chunk_size, desired_zarr_array_length, write_mode,
                          start_timestep, end_timestep)
 
         self.file_extension = '.nc'
@@ -331,14 +331,14 @@ class NCAR_Dataset(Dataset):
         folders.remove("/home/idies/workspace/turb/data07_02/zarr/")
 
         for i in range(len(folders)):
-            if self.prod_or_backup == "prod":
+            if self.write_mode == "prod":
                 idx = i
-            else:  # Shift back by 1
+            elif self.write_mode == "back":  # Shift back by 1
                 idx = i - 1
             
-            folders[idx] += self.name + "_" + str(idx + 1).zfill(2) + "_" + self.prod_or_backup + "/"
+            folders[idx] += self.name + "_" + str(idx + 1).zfill(2) + "_" + self.write_mode + "/"
 
-        if self.prod_or_backup == "back":
+        if self.write_mode == "back":
             # Shift list of FileDB folders by 1
             first_element = folders.pop(0)
             folders.append(first_element)
