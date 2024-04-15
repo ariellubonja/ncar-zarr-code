@@ -204,11 +204,11 @@ class Dataset(ABC):
             print(path)
 
         # Request user confirmation
-        response = input("Are you sure you want to delete these directories? This cannot be undone. Y/N: ")
+        response = input("\nAre you sure you want to delete these directories? This cannot be undone. Y/N: ")
         if response.lower() == 'y':
             for path in to_delete:
                 try:
-                    print(f"Deleting directory: {path}")
+                    print(f"\nDeleting directory: {path}")
                     shutil.rmtree(path)
                 except Exception as e:
                     print(f"Failed to delete {path}: {e}")
