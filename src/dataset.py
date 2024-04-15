@@ -128,7 +128,7 @@ class Dataset(ABC):
                 t.join()
 
 
-    def create_backup_copy(self, NUM_THREADS=1):
+    def create_backup_copy(self, NUM_THREADS=34):
         '''
         Write the backup copy of the dataset to FileDB, and shift
         the nodes by one, so prod and backup copies live on different
