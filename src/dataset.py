@@ -13,6 +13,8 @@ import os
 import re
 import warnings
 
+import shutil
+
 
 class Dataset(ABC):
     """
@@ -126,7 +128,7 @@ class Dataset(ABC):
                 t.join()
 
 
-    def create_backup_copy(self, NUM_THREADS=34):
+    def create_backup_copy(self, dataset_name, NUM_THREADS=34):
         '''
         Write the backup copy of the dataset to FileDB, and shift
         the nodes by one, so prod and backup copies live on different
@@ -138,7 +140,30 @@ class Dataset(ABC):
             disk. Currently 34 to match nr. of disks on FileDB
         '''
 
-        raise Exception("Please use create_backup_dataset.sh instead")
+        warnings.warn("Make sure the production dataset is "
+                      "correct! This function simply copies the production "
+                      "dataset and offsets it by one disk! Errors in `prod` will be"
+                      "propagated. Make sure to run all tests before creating "
+                      "this backup copy!", Warning)
+
+
+        filedb_folders = write_utils.list_fileDB_folders()
+
+        for i in range(len(filedb_folders)):
+            current_dir = filedb_folders[i]
+            next_dir = filedb_folders[(i + 1) % len(filedb_folders)]  # Wrap around to the first directory
+
+            # Scan current directory for folders matching 'sabl2048a_xx_prod'
+            for folder in os.listdir(current_dir):
+                if 'sabl2048a' in folder and folder.endswith('_prod'):
+                    src_path = os.path.join(current_dir, folder)
+                    # Replace '_prod' with '_back' in folder name
+                    dest_folder = folder.replace('_prod', '_back')
+                    dest_path = os.path.join(next_dir, dest_folder)
+
+                    # Copy directory
+                    print(f"Copying {src_path} to {dest_path}")
+                    shutil.copytree(src_path, dest_path)
 
 
 class NCAR_Dataset(Dataset):
