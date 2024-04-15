@@ -24,13 +24,13 @@ with open('tests/config.yaml', 'r') as file:
 dataset_name = os.environ.get('DATASET', 'NCAR-High-Rate-1')
 start_timestep = int(os.environ.get('START_TIMESTEP', 40))
 end_timestep = int(os.environ.get('END_TIMESTEP', 40))
-prod_or_backup = str(os.environ.get('PROD_OR_BACKUP', 'prod'))
+write_mode = str(os.environ.get('WRITE_MODE', 'prod'))
 
 
 # Cannot call class method using Parameterized, so have to add this fn. outside the class
 def generate_data_correctness_tests():
-    global config, dataset_name, start_timestep, end_timestep, prod_or_backup
-    if prod_or_backup != 'prod' and prod_or_backup != 'back':
+    global config, dataset_name, start_timestep, end_timestep, write_mode
+    if write_mode != 'prod' and write_mode != 'back':
         raise ValueError("prod_or_backup must be either 'prod' or 'back'")
 
     print("start_timestep: ", start_timestep)
@@ -44,7 +44,7 @@ def generate_data_correctness_tests():
         location_path=dataset_config['location_path'],
         desired_zarr_chunk_size=write_config['desired_zarr_chunk_length'],
         desired_zarr_array_length=write_config['desired_zarr_array_length'],
-        prod_or_backup=prod_or_backup,
+        write_mode=write_mode,
         start_timestep=dataset_config['start_timestep'],
         end_timestep=dataset_config['end_timestep']
     )

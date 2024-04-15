@@ -30,7 +30,7 @@ write_settings:
   desired_zarr_array_length: 512
   desired_zarr_chunk_length: 64
   desired_zarr_compressor: None
-  prod_or_backup: prod
+  write_mode: prod
 
 
 general_settings:

@@ -18,13 +18,13 @@ from src.dataset import NCAR_Dataset
 config = {}
 with open('tests/config.yaml', 'r') as file:
     config = yaml.safe_load(file)
-prod_or_backup = str(os.environ.get('PROD_OR_BACKUP', 'prod'))
+write_mode = str(os.environ.get('PROD_OR_BACKUP', 'prod'))
 
 
 # Cannot call class method using Parameterized, so have to add this fn. outside the class
 def generate_attribute_tests():
     # Access the global configuration variable
-    global config, prod_or_backup
+    global config, write_mode
 
     test_params = []
     for dataset_name, dataset_config in config['datasets'].items():
@@ -35,7 +35,7 @@ def generate_attribute_tests():
             location_path=dataset_config['location_path'],
             desired_zarr_chunk_size=write_config['desired_zarr_chunk_length'],
             desired_zarr_array_length=write_config['desired_zarr_array_length'],
-            prod_or_backup='prod',
+            write_mode='prod',
             start_timestep=dataset_config['start_timestep'],
             end_timestep=dataset_config['end_timestep']
         )

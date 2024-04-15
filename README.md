@@ -129,7 +129,7 @@ Use `pytest-xdist` (needs to be `pip install`-ed) as follows:
 # Change to NCAR-High-Rate-1, NCAR-High-Rate-2 or NCAR-Low-Rate
 # See config.yaml for the list of available datasets
 export DATASET="NCAR-Low-Rate"
-export PROD_OR_BACKUP=prod
+export WRITE_MODE=prod
 cd /home/idies/workspace/Storage/ariel4/persistent/zarrify-across-network
 
 # Done this way to prevent pytest from spawning too many threads and 
