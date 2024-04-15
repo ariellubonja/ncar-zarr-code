@@ -14,7 +14,7 @@ if __name__ == "__main__":
     parser.add_argument('-p', '--paths', type=list, nargs='+',
                         help='path to where each dataset file is located. Please specify 1 file and not whole '
                              'directories. If no path provided, the default path'
-                             'from config.yaml is used. Deprecated. Modify config.yaml instead.',
+                             'from config.yaml is used. Only required for prod write_mode. Deprecated. Modify config.yaml instead.',
                         required=False)
 
     parser.add_argument('--write_mode', type=str, choices=['prod', 'back', 'delete_back'], required=True,
@@ -23,11 +23,11 @@ if __name__ == "__main__":
                         help='Zarr chunk size (int)', default=64)
     parser.add_argument('--desired_cube_side', type=int, default=512,
                         help='The desired side length of the 3D data cube')
-    parser.add_argument('-st', '--start_timestep', type=int, required=True,
+    parser.add_argument('-st', '--start_timestep', type=int, required=False,
                         help='Timestep to start processing from. Due to SciServer job time limitations, not all '
-                             'timesteps can be processed at once.')
-    parser.add_argument('-et', '--end_timestep', type=int, required=True,
-                        help='Timestep to end processing at (inclusive). See -st for more info')
+                             'timesteps can be processed at once. Only required for prod write_mode.')
+    parser.add_argument('-et', '--end_timestep', type=int, required=False,
+                        help='Timestep to end processing at (inclusive). See -st for more info. Only required for prod write_mode.')
 
     # TODO Do some checking
     args = parser.parse_args()

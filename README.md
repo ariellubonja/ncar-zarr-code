@@ -45,7 +45,7 @@ Run `main.py` as follows to distribute the data across the FileDB nodes:
 ```
 cd /home/idies/workspace/Storage/ariel4/persistent/zarrify-across-network
 
-../zarr-py3.11/bin/python -m src.main --distribution prod -n sabl2048b -p /home/idies/workspace/turb/data02_02/ncar-high-rate-fixed-dt -st 48 -et 49
+../zarr-py3.11/bin/python -m src.main --write_mode prod -n sabl2048b -st 48 -et 49
 ```
 
 
@@ -56,7 +56,7 @@ Command-Line Arguments:
 - -p or --path: Path to the location of the data file (required). Specify individual filenames for each timestep, not the directory.
 - -zc or --zarr_chunk_size: Zarr chunk size. Defaults to 64.
 - --desired_cube_side: Desired side length of the 3D data cube. Defaults to 512.
-- --distribution: Type of distribution - "prod" for production or "back" for backup. Defaults to "prod".
+- --write_mode: Type of writes - "prod" for production or "back" for backup, "delete_back" to delete backups.
 [//]: # (- --zarr_encoding: Boolean flag to enable custom Zarr encoding. Currently not implemented. Defaults to True.)
 
 ##### A Few Things to Note
@@ -74,6 +74,8 @@ Remember `start_timestep` and `end_timestep` are inclusive.
 - Optimal Zarr chunk size has been found to be $64^3$ by Mike Schnaubern and Ryan Hausen. This is the default chunk size.
 
 - I've found that using Dask's local dir (`dask_local_dir='/home/idies/workspace/turb/data02_02', n_dask_workers=4)` is slower than not.
+
+- The repo includes a mode to delete backup directories (. This is useful for cleaning up after a failed write. To use, run `main.py` with the `--delete` flag. Please use cautiously.
 
 [//]: # (### Customizing Destination Layout and Assignment Schema)
 
