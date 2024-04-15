@@ -168,31 +168,40 @@ class Dataset(ABC):
         print("Backup creation completed.")
 
 
-    def delete_backup_directories(self):
+    def delete_backup_directories(self, NUM_THREADS=34):
         """
-        Deletes directories that match the pattern 'datasetname_xx_back' within the specified folders
-        after user confirmation.
+        Deletes directories that match 'sabl2048a_xx_back' in parallel using threading.
 
         Args:
-        filedb_folders (list of str): List of folder paths to search for directories to delete.
+            filedb_folders (list of str): List of folders where directories are to be deleted.
+            num_threads (int): Number of threads to use for parallel deletion.
         """
         filedb_folders = write_utils.list_fileDB_folders()
-        to_delete = []  # List to hold directories to be deleted
 
-        # Gather directories to delete
+        def directory_deleter(q):
+            """ Thread worker function to delete directories. """
+            while not q.empty():
+                try:
+                    path = q.get_nowait()
+                    print(f"Deleting directory: {path}")
+                    shutil.rmtree(path)
+                    q.task_done()
+                except queue.Empty:
+                    break
+                except Exception as e:
+                    print(f"Failed to delete {path}: {e}")
+                    q.task_done()
+
+        to_delete = []
+        q = queue.Queue()
+
+        # Collect all directories to delete
         for folder in filedb_folders:
-            if not os.path.exists(folder):
-                print(f"Folder does not exist: {folder}")
-                continue
-
-            try:
-                subfolders = os.listdir(folder)
-                for subfolder in subfolders:
+            if os.path.exists(folder):
+                for subfolder in os.listdir(folder):
                     if self.name in subfolder and subfolder.endswith('_back'):
                         full_path = os.path.join(folder, subfolder)
                         to_delete.append(full_path)
-            except Exception as e:
-                print(f"An error occurred while listing directories in {folder}: {e}")
 
         # Display directories to be deleted and ask for user confirmation
         if not to_delete:
@@ -203,15 +212,24 @@ class Dataset(ABC):
         for path in to_delete:
             print(path)
 
-        # Request user confirmation
-        response = input("\nAre you sure you want to delete these directories? This cannot be undone. Y/N: ")
+        response = input("Do you want to proceed with deleting these directories? Y/N: ")
         if response.lower() == 'y':
+            # Add directories to queue
             for path in to_delete:
-                try:
-                    print(f"\nDeleting directory: {path}")
-                    shutil.rmtree(path)
-                except Exception as e:
-                    print(f"Failed to delete {path}: {e}")
+                q.put(path)
+
+            threads = []
+            # Start threads
+            for _ in range(NUM_THREADS):
+                t = threading.Thread(target=directory_deleter, args=(q,))
+                t.start()
+                threads.append(t)
+
+            q.join()  # Wait for the queue to be empty
+
+            for t in threads:  # Ensure all threads have finished
+                t.join()
+
             print("Deletion completed.")
         else:
             print("Deletion aborted by user.")
