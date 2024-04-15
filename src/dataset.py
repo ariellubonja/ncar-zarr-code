@@ -167,6 +167,56 @@ class Dataset(ABC):
 
         print("Backup creation completed.")
 
+
+    def delete_backup_directories(self):
+        """
+        Deletes directories that match the pattern 'datasetname_xx_back' within the specified folders
+        after user confirmation.
+
+        Args:
+        filedb_folders (list of str): List of folder paths to search for directories to delete.
+        """
+        filedb_folders = write_utils.list_fileDB_folders()
+        to_delete = []  # List to hold directories to be deleted
+
+        # Gather directories to delete
+        for folder in filedb_folders:
+            if not os.path.exists(folder):
+                print(f"Folder does not exist: {folder}")
+                continue
+
+            try:
+                subfolders = os.listdir(folder)
+                for subfolder in subfolders:
+                    if self.name in subfolder and subfolder.endswith('_back'):
+                        full_path = os.path.join(folder, subfolder)
+                        to_delete.append(full_path)
+            except Exception as e:
+                print(f"An error occurred while listing directories in {folder}: {e}")
+
+        # Display directories to be deleted and ask for user confirmation
+        if not to_delete:
+            print("No directories to delete.")
+            return
+
+        print("Directories to be deleted:")
+        for path in to_delete:
+            print(path)
+
+        # Request user confirmation
+        response = input("Are you sure you want to delete these directories? This cannot be undone. Y/N: ")
+        if response.lower() == 'y':
+            for path in to_delete:
+                try:
+                    print(f"Deleting directory: {path}")
+                    shutil.rmtree(path)
+                except Exception as e:
+                    print(f"Failed to delete {path}: {e}")
+            print("Deletion completed.")
+        else:
+            print("Deletion aborted by user.")
+
+
 class NCAR_Dataset(Dataset):
     """
         National Center for Atmospheric Research (NCAR) 2048^3 dataset.
