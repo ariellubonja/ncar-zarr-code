@@ -133,7 +133,7 @@ class Dataset(ABC):
         Write the backup copy of the dataset to FileDB, and shift
         the nodes by one, so prod and backup copies live on different
         disks. Make sure `prod` data is correct by running the tests/
-        before running this function!
+        before running this function! Modified from ChatGPT
 
         Args:
             NUM_THREADS (int): Number of threads to use when writing to
@@ -146,24 +146,41 @@ class Dataset(ABC):
                       "propagated. Make sure to run all tests before creating "
                       "this backup copy!", Warning)
 
+        def worker(q):
+            """Thread worker function to copy directories."""
+            while True:
+                try:
+                    src_path, dest_path = q.get_nowait()
+                    print(f"Copying {src_path} to {dest_path}")
+                    shutil.copytree(src_path, dest_path)
+                    q.task_done()
+                except queue.Empty:
+                    break
 
         filedb_folders = write_utils.list_fileDB_folders()
+        q = queue.Queue()
 
         for i in range(len(filedb_folders)):
             current_dir = filedb_folders[i]
             next_dir = filedb_folders[(i + 1) % len(filedb_folders)]  # Wrap around to the first directory
 
-            # Scan current directory for folders matching 'dataset_name_xx_prod'
             for folder in os.listdir(current_dir):
                 if self.name in folder and folder.endswith('_prod'):
                     src_path = os.path.join(current_dir, folder)
-                    # Replace '_prod' with '_back' in folder name
                     dest_folder = folder.replace('_prod', '_back')
                     dest_path = os.path.join(next_dir, dest_folder)
+                    q.put((src_path, dest_path))
 
-                    # Copy directory
-                    print(f"Copying {src_path} to {dest_path}")
-                    shutil.copytree(src_path, dest_path)
+        threads = []
+        for _ in range(NUM_THREADS):
+            t = threading.Thread(target=worker, args=(q,))
+            t.start()
+            threads.append(t)
+
+        q.join()  # Block until all tasks are done
+
+        for t in threads:
+            t.join()  # Make sure all threads have finished
 
         print("Backup creation completed.")
 
@@ -171,6 +188,7 @@ class Dataset(ABC):
     def delete_backup_directories(self, NUM_THREADS=34):
         """
         Deletes directories that match 'sabl2048a_xx_back' in parallel using threading.
+        Modified from ChatGPT
 
         Args:
             filedb_folders (list of str): List of folders where directories are to be deleted.
