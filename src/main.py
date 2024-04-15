@@ -39,7 +39,8 @@ if __name__ == "__main__":
     start_timestep = args.start_timestep
     end_timestep = args.end_timestep
 
-    with open('/Users/ariellubonja/prog/zarrify-across-network/config.yaml', 'r') as file:
+    # with open('/Users/ariellubonja/prog/zarrify-across-network/config.yaml', 'r') as file:  # Debugging purposes on Ariel's Mac
+    with open('config.yaml', 'r') as file:
         config = yaml.safe_load(file)
 
     if LOCATION_PATHS is None:
