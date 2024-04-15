@@ -147,15 +147,21 @@ class Dataset(ABC):
                       "this backup copy!", Warning)
 
         def worker(q):
-            """Thread worker function to copy directories."""
+            """Thread worker function to copy directories and overwrite existing ones."""
             while True:
                 try:
                     src_path, dest_path = q.get_nowait()
                     print(f"Copying {src_path} to {dest_path}")
-                    shutil.copytree(src_path, dest_path)
+                    # Check if the destination path exists and remove it if it does
+                    if os.path.exists(dest_path):
+                        shutil.rmtree(dest_path)
+                    shutil.copytree(src_path, dest_path, dirs_exist_ok=True)
                     q.task_done()
                 except queue.Empty:
                     break
+                except Exception as e:
+                    print(f"Error copying {src_path} to {dest_path}: {e}")
+                    q.task_done()
 
         filedb_folders = write_utils.list_fileDB_folders()
         q = queue.Queue()
