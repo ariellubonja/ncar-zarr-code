@@ -116,7 +116,7 @@ def split_zarr_group(ds, smaller_size, dims):
 
 
 def list_fileDB_folders():
-    base_dir = '/Volumes/backup-hdd/ncar/'
+    base_dir = '/home/idies/workspace/turb/'
     filedb_folders = [os.path.join(base_dir, f'data{str(d).zfill(2)}_{str(f).zfill(2)}/zarr/') for f in range(1, 4)
                       for d in range(1, 13)]
     # Hard-coded - TODO better solution?
