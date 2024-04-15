@@ -128,7 +128,7 @@ class Dataset(ABC):
                 t.join()
 
 
-    def create_backup_copy(self, dataset_name, NUM_THREADS=34):
+    def create_backup_copy(self, NUM_THREADS=34):
         '''
         Write the backup copy of the dataset to FileDB, and shift
         the nodes by one, so prod and backup copies live on different
@@ -153,9 +153,9 @@ class Dataset(ABC):
             current_dir = filedb_folders[i]
             next_dir = filedb_folders[(i + 1) % len(filedb_folders)]  # Wrap around to the first directory
 
-            # Scan current directory for folders matching 'sabl2048a_xx_prod'
+            # Scan current directory for folders matching 'dataset_name_xx_prod'
             for folder in os.listdir(current_dir):
-                if 'sabl2048a' in folder and folder.endswith('_prod'):
+                if self.name in folder and folder.endswith('_prod'):
                     src_path = os.path.join(current_dir, folder)
                     # Replace '_prod' with '_back' in folder name
                     dest_folder = folder.replace('_prod', '_back')
@@ -165,6 +165,7 @@ class Dataset(ABC):
                     print(f"Copying {src_path} to {dest_path}")
                     shutil.copytree(src_path, dest_path)
 
+        print("Backup creation completed.")
 
 class NCAR_Dataset(Dataset):
     """
