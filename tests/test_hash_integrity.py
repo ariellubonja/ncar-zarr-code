@@ -19,7 +19,9 @@ from src.dataset import NCAR_Dataset
 config = {}
 with open('tests/config.yaml', 'r') as file:
     config = yaml.safe_load(file)
-dataset_name = os.environ.get('DATASET', 'NCAR-High-Rate-1')
+dataset_name = os.environ.get('DATASET', 'sabl2048b')
+start_timestep = os.environ.get('START_TIMESTEP')
+end_timestep = os.environ.get('END_TIMESTEP')
 
 
 def get_sha256(full_file_path):
@@ -47,8 +49,8 @@ def generate_hash_tests():
         desired_zarr_chunk_size=write_config['desired_zarr_chunk_length'],
         desired_zarr_array_length=write_config['desired_zarr_array_length'],
         write_mode='prod',
-        start_timestep=dataset_config['start_timestep'],
-        end_timestep=dataset_config['end_timestep']
+        start_timestep=START_TIMESTEP,
+        end_timestep=END_TIMESTEP
     )
 
     all_expected_hashes = []
@@ -57,7 +59,9 @@ def generate_hash_tests():
     hash_file_path = os.path.join(dataset.location_path, 'hash.txt')
     if os.path.exists(hash_file_path):
         with open(hash_file_path, 'r') as hash_file:
-            for line in hash_file:
+            for i in range(START_TIMESTEP, END_TIMESTEP):
+            # for line in hash_file:
+                line = hash_file[i]
                 temp_line = line.split('  ')
                 temp_line[1] = os.path.join(dataset.location_path, temp_line[1].replace('\n', ''))
                 all_expected_hashes.append(tuple(temp_line))
