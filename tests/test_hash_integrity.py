@@ -17,7 +17,7 @@ from src.dataset import NCAR_Dataset
 
 
 config = {}
-with open('tests/config.yaml', 'r') as file:
+with open('config.yaml', 'r') as file:
     config = yaml.safe_load(file)
 dataset_name = os.environ.get('DATASET', 'sabl2048b')
 start_timestep = os.environ.get('START_TIMESTEP')
