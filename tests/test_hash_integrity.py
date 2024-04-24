@@ -18,10 +18,11 @@ from src.dataset import NCAR_Dataset
 
 config = {}
 with open('config.yaml', 'r') as file:
+# with open('/Users/ariellubonja/prog/zarrify-across-network/config.yaml', 'r') as file:
     config = yaml.safe_load(file)
 dataset_name = os.environ.get('DATASET', 'sabl2048b')
-start_timestep = os.environ.get('START_TIMESTEP')
-end_timestep = os.environ.get('END_TIMESTEP')
+start_timestep = int(os.environ.get('START_TIMESTEP'))
+end_timestep = int(os.environ.get('END_TIMESTEP'))
 
 
 def get_sha256(full_file_path):
@@ -44,34 +45,40 @@ def generate_hash_tests():
     dataset_config = config['datasets'][dataset_name]
     write_config = config['write_settings']
 
-    if START_TIMESTEP < 50 and END_TIMESTEP < 50:
-        location = dataset_config['location_path'][0]  # First 50 timesteps are in 1 folder
-    elif START_TIMESTEP >= 50 and END_TIMESTEP > 50:
-        location = dataset_config['location_path'][1]
-    else:
-        raise Exception("Please run hash tests separately on timesteps 0-49 and 50-104, since they're stored on different folders")
-    
+    # config['datasets'].keys() # dataset_names
+
     dataset = NCAR_Dataset(
-        name=dataset_config['name'],
-        location_path=location,
+        name=dataset_name,
+        location_paths=dataset_config['location_paths'],
         desired_zarr_chunk_size=write_config['desired_zarr_chunk_length'],
         desired_zarr_array_length=write_config['desired_zarr_array_length'],
         write_mode='prod',
-        start_timestep=START_TIMESTEP,
-        end_timestep=END_TIMESTEP
+        start_timestep=start_timestep,
+        end_timestep=end_timestep
     )
+
+    dataset_index = None
+    if dataset_name == "sabl2048b": # high rate data is split into 2 folders
+        if start_timestep < 50 and end_timestep < 50:
+            dataset_index = 0  # First 50 timesteps are in 1 folder
+        elif start_timestep >= 50 and end_timestep > 50:
+            dataset_index = 1
+        else:
+            raise Exception("Please run hash tests separately on timesteps 0-49 and 50-104, since they're stored on different folders")
 
     all_expected_hashes = []
     # Iterate over each data path and load the corresponding hash entries
     # for data_path in dataset.location_path:
-    hash_file_path = os.path.join(dataset.location_path, 'hash.txt')
+    hash_file_path = os.path.join(dataset.location_paths[dataset_index], 'hash.txt')
     if os.path.exists(hash_file_path):
-        with open(hash_file_path, 'r') as hash_file:
-            for i in range(START_TIMESTEP, END_TIMESTEP):
-            # for line in hash_file:
-                line = hash_file[i]
+        with open(hash_file_path, 'r') as hash_file:  # Make sure file isn't too big
+            lines = hash_file.readlines()  # Read all lines into a list
+            selected_lines = lines[start_timestep:end_timestep + 1]  # Slice the list for the desired range
+
+            all_expected_hashes = []
+            for line in selected_lines:
                 temp_line = line.split('  ')
-                temp_line[1] = os.path.join(dataset.location_path, temp_line[1].replace('\n', ''))
+                temp_line[1] = os.path.join(dataset.location_paths[dataset_index], temp_line[1].replace('\n', ''))
                 all_expected_hashes.append(tuple(temp_line))
     else:
         raise FileNotFoundError(f"hash.txt file expected but not found at {hash_file_path}")

@@ -10,6 +10,7 @@ datasets:
 #    name: sabl2048b
     location_paths:
       - /home/idies/workspace/turb/data02_02/ncar-high-rate-fixed-dt/  # Timesteps 0-49
+#      - /Users/ariellubonja/Downloads/
       - /home/idies/workspace/turb/data02_03/ncar-high-rate-fixed-dt/  # Timesteps 50-104. Split due to disk space
     start_timestep: 0
     end_timestep: 104

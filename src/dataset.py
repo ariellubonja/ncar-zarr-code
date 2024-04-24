@@ -268,9 +268,9 @@ class NCAR_Dataset(Dataset):
         This class implements transform_to_zarr(). Please see Dataset superclass for more details
     """
 
-    def __init__(self, name, location_path, desired_zarr_chunk_size, desired_zarr_array_length, write_mode,
+    def __init__(self, name, location_paths, desired_zarr_chunk_size, desired_zarr_array_length, write_mode,
                  start_timestep, end_timestep):
-        super().__init__(name, location_path, desired_zarr_chunk_size, desired_zarr_array_length, write_mode,
+        super().__init__(name, location_paths, desired_zarr_chunk_size, desired_zarr_array_length, write_mode,
                          start_timestep, end_timestep)
 
         self.file_extension = '.nc'
