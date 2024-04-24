@@ -43,9 +43,17 @@ def generate_hash_tests():
 
     dataset_config = config['datasets'][dataset_name]
     write_config = config['write_settings']
+
+    if START_TIMESTEP < 50 and END_TIMESTEP < 50:
+        location = dataset_config['location_path'][0]  # First 50 timesteps are in 1 folder
+    elif START_TIMESTEP >= 50 and END_TIMESTEP > 50:
+        location = dataset_config['location_path'][1]
+    else:
+        raise Exception("Please run hash tests separately on timesteps 0-49 and 50-104, since they're stored on different folders")
+    
     dataset = NCAR_Dataset(
         name=dataset_config['name'],
-        location_path=dataset_config['location_path'],
+        location_path=location,
         desired_zarr_chunk_size=write_config['desired_zarr_chunk_length'],
         desired_zarr_array_length=write_config['desired_zarr_array_length'],
         write_mode='prod',
