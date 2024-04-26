@@ -32,7 +32,7 @@ if __name__ == "__main__":
     # TODO Do some checking
     args = parser.parse_args()
     DATASET_NAME = args.name
-    LOCATION_PATHS = args.paths
+    # LOCATION_PATHS = args.paths
     ZARR_CHUNK_SIDE = args.zarr_chunk_size
     desired_cube_side = args.desired_cube_side
     WRITE_MODE = args.write_mode
@@ -43,13 +43,13 @@ if __name__ == "__main__":
     with open('config.yaml', 'r') as file:
         config = yaml.safe_load(file)
 
-    if LOCATION_PATHS is None:
-        if DATASET_NAME not in config['datasets']:
-            raise ValueError("DATASET_NAME not found in config.yaml")
-        LOCATION_PATHS = config['datasets'][DATASET_NAME]['location_paths']
+    # if LOCATION_PATHS is None:
+    #     if DATASET_NAME not in config['datasets']:
+    #         raise ValueError("DATASET_NAME not found in config.yaml")
+    LOCATION_PATHS = config['datasets'][DATASET_NAME]['location_paths']
 
     ncar_dataset = NCAR_Dataset(name=DATASET_NAME,
-                                location_path=LOCATION_PATHS,
+                                location_paths=LOCATION_PATHS,
                                 desired_zarr_chunk_size=ZARR_CHUNK_SIDE,
                                 desired_zarr_array_length=desired_cube_side,
                                 write_mode=WRITE_MODE,

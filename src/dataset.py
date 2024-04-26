@@ -369,11 +369,6 @@ class NCAR_Dataset(Dataset):
         """
         folders = write_utils.list_fileDB_folders()
 
-        # TODO Hard-coded
-        # Avoiding 7-2 and 9-2 - they're too full as of May 2023
-        folders.remove("/home/idies/workspace/turb/data09_02/zarr/")
-        folders.remove("/home/idies/workspace/turb/data07_02/zarr/")
-
         for i in range(len(folders)):
             if self.write_mode == "prod":
                 idx = i
