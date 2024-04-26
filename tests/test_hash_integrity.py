@@ -57,19 +57,21 @@ def generate_hash_tests():
         end_timestep=end_timestep
     )
 
-    dataset_index = None
+    dataset_path = None
     if dataset_name == "sabl2048b": # high rate data is split into 2 folders
         if start_timestep < 50 and end_timestep < 50:
-            dataset_index = 0  # First 50 timesteps are in 1 folder
+            dataset_path = dataset.location_paths[0]  # First 50 timesteps are in 1 folder
         elif start_timestep >= 50 and end_timestep > 50:
-            dataset_index = 1
+            dataset_path = dataset.location_paths[1]
         else:
-            raise Exception("Please run hash tests separately on timesteps 0-49 and 50-104, since they're stored on different folders")
+            raise Exception("Please run hash tests for sabl2048b separately on timesteps 0-49 and 50-104, since they're stored on different folders")
+    elif dataset_name == "sabl2048a":
+        dataset_path = dataset.location_paths  # Only 1 folder, not a list
 
     all_expected_hashes = []
     # Iterate over each data path and load the corresponding hash entries
     # for data_path in dataset.location_path:
-    hash_file_path = os.path.join(dataset.location_paths[dataset_index], 'hash.txt')
+    hash_file_path = os.path.join(dataset_path, 'hash.txt')
     if os.path.exists(hash_file_path):
         with open(hash_file_path, 'r') as hash_file:  # Make sure file isn't too big
             lines = hash_file.readlines()  # Read all lines into a list
@@ -78,7 +80,7 @@ def generate_hash_tests():
             all_expected_hashes = []
             for line in selected_lines:
                 temp_line = line.split('  ')
-                temp_line[1] = os.path.join(dataset.location_paths[dataset_index], temp_line[1].replace('\n', ''))
+                temp_line[1] = os.path.join(dataset_path, temp_line[1].replace('\n', ''))
                 all_expected_hashes.append(tuple(temp_line))
     else:
         raise FileNotFoundError(f"hash.txt file expected but not found at {hash_file_path}")
