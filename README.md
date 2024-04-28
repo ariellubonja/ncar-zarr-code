@@ -137,7 +137,7 @@ export WRITE_MODE=prod  # Test the production copy
 cd /home/idies/workspace/Storage/ariel4/persistent/zarrify-across-network  # cd to wherever this repo is located
 
 # 10 timesteps is about the 16h limit for SciServer Large Job cutoff
-for timestep in {0..9}
+for timestep in {0..9}  # Inclusive
 do
     export START_TIMESTEP=$timestep
     export END_TIMESTEP=$timestep
