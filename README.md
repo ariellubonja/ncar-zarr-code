@@ -45,7 +45,7 @@ Run `main.py` as follows to distribute the data across the FileDB nodes:
 ```
 cd /home/idies/workspace/Storage/ariel4/persistent/zarrify-across-network
 
-../zarr-py3.11/bin/python -m src.main --write_mode prod -n sabl2048b -st 48 -et 49
+../zarr-py3.11/bin/python -m src.main --write_mode prod -n sabl2048b -st 48 -et 49  # Inclusive
 ```
 
 
