@@ -20,7 +20,7 @@ config = {}
 with open('config.yaml', 'r') as file:
 # with open('/Users/ariellubonja/prog/zarrify-across-network/config.yaml', 'r') as file:
     config = yaml.safe_load(file)
-dataset_name = os.environ.get('DATASET', 'sabl2048b')
+dataset_name = os.environ.get('DATASET')
 start_timestep = int(os.environ.get('START_TIMESTEP'))
 end_timestep = int(os.environ.get('END_TIMESTEP'))
 
@@ -66,7 +66,7 @@ def generate_hash_tests():
         else:
             raise Exception("Please run hash tests for sabl2048b separately on timesteps 0-49 and 50-104, since they're stored on different folders")
     elif dataset_name == "sabl2048a":
-        dataset_path = dataset.location_paths  # Only 1 folder, not a list
+        dataset_path = dataset.location_paths[0]  # Only 1 folder, not a list
 
     all_expected_hashes = []
     # Iterate over each data path and load the corresponding hash entries
