@@ -19,9 +19,9 @@ from src.dataset import NCAR_Dataset
 
 
 config = {}
-with open('tests/config.yaml', 'r') as file:
+with open('config.yaml', 'r') as file:
     config = yaml.safe_load(file)
-dataset_name = os.environ.get('DATASET', 'NCAR-High-Rate-1')
+dataset_name = os.environ.get('DATASET')
 start_timestep = int(os.environ.get('START_TIMESTEP', 40))
 end_timestep = int(os.environ.get('END_TIMESTEP', 40))
 write_mode = str(os.environ.get('WRITE_MODE', 'prod'))
@@ -32,23 +32,24 @@ def generate_data_correctness_tests():
     global config, dataset_name, start_timestep, end_timestep, write_mode
     if write_mode != 'prod' and write_mode != 'back':
         raise ValueError("prod_or_backup must be either 'prod' or 'back'")
+    
+    dataset_config = config['datasets'][dataset_name]
+    write_config = config['write_settings']
 
     print("start_timestep: ", start_timestep)
     print("end_timestep: ", end_timestep)
 
-    test_params = []
-    dataset_config = config['datasets'][dataset_name]
-    write_config = config['write_settings']
     dataset = NCAR_Dataset(
-        name=dataset_config['name'],
-        location_path=dataset_config['location_path'],
+        name=dataset_name,
+        location_paths=dataset_config['location_paths'],
         desired_zarr_chunk_size=write_config['desired_zarr_chunk_length'],
         desired_zarr_array_length=write_config['desired_zarr_array_length'],
-        write_mode=write_mode,
-        start_timestep=dataset_config['start_timestep'],
-        end_timestep=dataset_config['end_timestep']
+        write_mode='prod',
+        start_timestep=start_timestep,
+        end_timestep=end_timestep
     )
 
+    test_params = []
     for timestep in range(start_timestep, end_timestep + 1):
         print("Current timestep: ", timestep)
         lazy_zarr_cubes, range_list = dataset.transform_to_zarr(timestep)

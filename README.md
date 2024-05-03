@@ -45,7 +45,7 @@ Run `main.py` as follows to distribute the data across the FileDB nodes:
 ```
 cd /home/idies/workspace/Storage/ariel4/persistent/zarrify-across-network
 
-../zarr-py3.11/bin/python -m src.main --write_mode prod -n sabl2048b -st 48 -et 49
+../zarr-py3.11/bin/python -m src.main --write_mode prod -n sabl2048b -st 48 -et 49  # Inclusive
 ```
 
 
@@ -105,18 +105,23 @@ You can set these variables in your terminal as follows:
 
 For Linux/Mac:
 ```
-export DATASET="NCAR-High-Rate-1"
+export DATASET="sabl2048b"  # or sabl2048a for ncar low-rate
 export START_TIMESTEP=0
 export END_TIMESTEP=2
 ```
 
 For Windows:
 ```
-set DATASET=NCAR-High-Rate-1
+set DATASET=sabl2048b
 set START_TIMESTEP=0
 set END_TIMESTEP=2
 ```
+
+
+
 ### Running the Tests
+
+
 
 #### Data Correctness Test
 
@@ -126,21 +131,18 @@ comparing all arrays
 Use `pytest-xdist` (needs to be `pip install`-ed) as follows:
 
 ```
-# Change to NCAR-High-Rate-1, NCAR-High-Rate-2 or NCAR-Low-Rate
 # See config.yaml for the list of available datasets
-export DATASET="NCAR-Low-Rate"
-export WRITE_MODE=prod
-cd /home/idies/workspace/Storage/ariel4/persistent/zarrify-across-network
+export DATASET="sabl2048a"
+export WRITE_MODE=prod  # Test the production copy
+cd /home/idies/workspace/Storage/ariel4/persistent/zarrify-across-network  # cd to wherever this repo is located
 
-# Done this way to prevent pytest from spawning too many threads and 
-#   running out of memory 
-for timestep in {1..10}  # Change as desired
+# 10 timesteps is about the 16h limit for SciServer Large Job cutoff
+for timestep in {0..9}  # Inclusive
 do
-    # Set START_TIMESTEP and END_TIMESTEP for the current iteration
     export START_TIMESTEP=$timestep
     export END_TIMESTEP=$timestep
 
-    # Run the pytest in parallel with 34 threads
+    # Run the script w/ 34 threads bcs. there are 34 FileDB disks
     ../zarr-py3.11/bin/python -m pytest -n 34 tests/test_zarr_data_correctness.py
 done
 ```
@@ -153,9 +155,8 @@ This test case checks all timesteps in the given dataset folder, so no
 need to specify `start_timestep` and `end_timestep`.
 
 ```
-# Change to NCAR-High-Rate-1, NCAR-High-Rate-2 or NCAR-Low-Rate
 # See config.yaml for the list of available datasets
-export DATASET="NCAR-High-Rate-2"
+export DATASET="sabl2048a"
 cd /home/idies/workspace/Storage/ariel4/persistent/zarrify-across-network
 
 ../zarr-py3.11/bin/python -m pytest -n 5 tests/test_hash_integrity.py
@@ -170,7 +171,7 @@ for all NCAR timesteps. Only need to specify whether `prod` or `back` copy
 In SciServer, can run this as a Small job, since it's very quick
 
 ```
-export PROD_OR_BACKUP=prod
+export WRITE_MODE=prod
 
 cd /home/idies/workspace/Storage/ariel4/persistent/zarrify-across-network
 
