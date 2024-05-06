@@ -21,8 +21,8 @@ with open('config.yaml', 'r') as file:
 # with open('/Users/ariellubonja/prog/zarrify-across-network/config.yaml', 'r') as file:
     config = yaml.safe_load(file)
 dataset_name = os.environ.get('DATASET')
-start_timestep = int(os.environ.get('START_TIMESTEP'), -1)
-end_timestep = int(os.environ.get('END_TIMESTEP'), -1)
+start_timestep = int(os.environ.get('START_TIMESTEP', -1))
+end_timestep = int(os.environ.get('END_TIMESTEP', -1))
 
 
 def get_sha256(full_file_path):
