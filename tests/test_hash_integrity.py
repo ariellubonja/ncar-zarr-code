@@ -21,8 +21,8 @@ with open('config.yaml', 'r') as file:
 # with open('/Users/ariellubonja/prog/zarrify-across-network/config.yaml', 'r') as file:
     config = yaml.safe_load(file)
 dataset_name = os.environ.get('DATASET')
-start_timestep = int(os.environ.get('START_TIMESTEP'))
-end_timestep = int(os.environ.get('END_TIMESTEP'))
+start_timestep = int(os.environ.get('START_TIMESTEP'), -1)
+end_timestep = int(os.environ.get('END_TIMESTEP'), -1)
 
 
 def get_sha256(full_file_path):
@@ -40,9 +40,14 @@ def generate_hash_tests():
     Load all expected hashes from 'hash.txt' files in the directories specified in 'config.yaml'.
     """
     # Load YAML configuration
-    global config, dataset_name
+    global config, dataset_name, start_timestep, end_timestep
 
     dataset_config = config['datasets'][dataset_name]
+
+    if start_timestep == -1 or end_timestep == -1:
+        start_timestep = dataset_config['start_timestep']
+        end_timestep = dataset_config['end_timestep']
+
     write_config = config['write_settings']
 
     # config['datasets'].keys() # dataset_names
