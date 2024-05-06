@@ -151,14 +151,15 @@ done
 
 - Check whether the hash of the original data matches the given hash.txt
 
-This test case checks all timesteps in the given dataset folder, so no 
-need to specify `start_timestep` and `end_timestep`.
+Please limit hash checks for the SABL high-rate data to 0-49 timesteps, then 50-104 timesteps, since these are held on different disks. 
 
 ```
 # See config.yaml for the list of available datasets
-export DATASET="sabl2048a"
-cd /home/idies/workspace/Storage/ariel4/persistent/zarrify-across-network
+export DATASET="sabl2048b"
+export START_TIMESTEP=0
+export END_TIMESTEP=49
 
+cd /home/idies/workspace/Storage/ariel4/persistent/zarrify-across-network
 ../zarr-py3.11/bin/python -m pytest -n 5 tests/test_hash_integrity.py
 ```
 
