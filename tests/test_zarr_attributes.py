@@ -16,9 +16,9 @@ from src.dataset import NCAR_Dataset
 
 
 config = {}
-with open('tests/config.yaml', 'r') as file:
+with open('config.yaml', 'r') as file:
     config = yaml.safe_load(file)
-write_mode = str(os.environ.get('PROD_OR_BACKUP', 'prod'))
+write_mode = str(os.environ.get('WRITE_MODE', 'prod'))
 
 
 # Cannot call class method using Parameterized, so have to add this fn. outside the class
@@ -31,8 +31,8 @@ def generate_attribute_tests():
         dataset_config = config['datasets'][dataset_name]
         write_config = config['write_settings']
         dataset = NCAR_Dataset(
-            name=dataset_config['name'],
-            location_path=dataset_config['location_path'],
+            name=dataset_name,
+            location_paths = dataset_config['location_paths'],
             desired_zarr_chunk_size=write_config['desired_zarr_chunk_length'],
             desired_zarr_array_length=write_config['desired_zarr_array_length'],
             write_mode='prod',
