@@ -80,7 +80,14 @@ def generate_hash_tests():
     if os.path.exists(hash_file_path):
         with open(hash_file_path, 'r') as hash_file:  # Make sure file isn't too big
             lines = hash_file.readlines()  # Read all lines into a list
-            selected_lines = lines[start_timestep:end_timestep + 1]  # Slice the list for the desired range
+            if start_timestep < 50 and end_timestep < 50:
+                selected_lines = lines[start_timestep:end_timestep + 1]  # Slice the list for the desired range
+            elif start_timestep >= 50 and end_timestep > 50:
+                # Shift the indices backwards by 50 since they start with jhd.050 at line 0
+                selected_lines = lines[start_timestep-50:end_timestep + 1 - 50]  # Slice the list for the desired range
+            else:
+                raise Exception(
+                    "Please run hash tests for sabl2048b separately on timesteps 0-49 and 50-104, since they're stored on different folders")
 
             all_expected_hashes = []
             for line in selected_lines:
