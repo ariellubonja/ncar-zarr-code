@@ -6,6 +6,19 @@
 # Adjust test parameters based on how the data is written
 
 datasets:
+  jhf2048high:  # 'jhf' dataset. Name will change
+    location_paths:
+      - /home/idies/workspace/turbulence-ceph-staging/ncar-jhf/hr
+    start_timestep: 0
+    end_timestep: 104  # Inclusive
+
+  jhf2048low:  # Low Rate
+    location_paths:
+      - /home/idies/workspace/turbulence-ceph-staging/ncar-jhf/lr
+    start_timestep: 0
+    end_timestep: 19
+
+
   sabl2048b:  # NCAR High Rate
 #    name: sabl2048b
     location_paths:
