@@ -160,7 +160,7 @@ export START_TIMESTEP=0
 export END_TIMESTEP=49
 
 cd /home/idies/workspace/Storage/ariel4/persistent/zarrify-across-network
-../zarr-py3.11/bin/python -m pytest -n 5 tests/test_hash_integrity.py
+../zarr-py3.11/bin/python -m pytest -n 10 tests/test_hash_integrity.py
 ```
 
 

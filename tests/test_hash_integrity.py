@@ -62,7 +62,7 @@ def generate_hash_tests():
         end_timestep=end_timestep
     )
 
-    dataset_path = None
+    dataset_path = dataset.location_paths[0]
     if dataset_name == "sabl2048b": # high rate data is split into 2 folders
         if start_timestep < 50 and end_timestep < 50:
             dataset_path = dataset.location_paths[0]  # First 50 timesteps are in 1 folder
